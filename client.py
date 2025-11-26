@@ -1,7 +1,7 @@
 import socket
 
 SERVER_HOST = '127.0.0.1'
-SERVER_PORT = 5555
+SERVER_PORT = 12345
 
 EXIT_KEYWORDS = [
     'quit', 'exit', 'au revoir', 'aurevoir', 'à plus', 'a plus',

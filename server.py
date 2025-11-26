@@ -1,8 +1,8 @@
 import socket
 import threading
 
-HOST = '0.0.0.0'
-PORT = 5555
+HOST = '127.0.0.1'
+PORT = 12345
 
 EXIT_KEYWORDS = [
     'quit', 'exit', 'au revoir', 'aurevoir', 'à plus', 'a plus',
