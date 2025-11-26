@@ -18,6 +18,7 @@ EXIT_KEYWORDS = [
 client_socket = None
 connected = False
 receive_thread = None
+username = None  # Stocker le nom d'utilisateur
 
 def receive_messages():
     """Thread pour recevoir les messages du serveur"""
@@ -86,8 +87,9 @@ def handle_disconnect():
 @socketio.on('connect_to_server')
 def handle_connect_to_server(data):
     """Connexion au serveur TCP"""
-    global client_socket, connected, receive_thread
+    global client_socket, connected, receive_thread, username
     
+    username = data.get('username', 'Anonyme')
     server_ip = data.get('server_ip', '127.0.0.1')
     server_port = int(data.get('server_port', 5555))
     
@@ -96,8 +98,11 @@ def handle_connect_to_server(data):
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((server_ip, server_port))
         
+        # Envoyer le username au serveur comme premier message
+        client_socket.send(username.encode('utf-8'))
+        
         connected = True
-        print(f"[CONNECTÉ] Connecté au serveur {server_ip}:{server_port}")
+        print(f"[CONNECTÉ] {username} connecté au serveur {server_ip}:{server_port}")
         
         # Démarrer le thread de réception
         receive_thread = threading.Thread(target=receive_messages)
@@ -107,7 +112,8 @@ def handle_connect_to_server(data):
         # Confirmer la connexion à l'interface web
         emit('connected', {
             'server_ip': server_ip,
-            'server_port': server_port
+            'server_port': server_port,
+            'username': username
         })
     
     except ConnectionRefusedError:

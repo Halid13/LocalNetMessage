@@ -115,16 +115,16 @@
 
         // Nouvelle connexion client
         socket.on('client_connected', (data) => {
-            addClientToList(data.client_id, data.address);
+            addClientToList(data.client_id, data.username, data.address);
             updateConnectionCount();
-            addSystemMessage(`Client ${data.address} connecté`);
+            addSystemMessage(`${data.username} (${data.address}) connecté`);
         });
 
         // Client déconnecté
         socket.on('client_disconnected', (data) => {
             removeClientFromList(data.client_id);
             updateConnectionCount();
-            addSystemMessage(`Client ${data.address} déconnecté`);
+            addSystemMessage(`${data.username} (${data.address}) déconnecté`);
             if (selectedClient === data.client_id) {
                 selectedClient = null;
                 updateSelectedClient();
@@ -133,7 +133,7 @@
 
         // Message reçu
         socket.on('message_received', (data) => {
-            addMessage(data.client_id, data.address, data.message, 'received');
+            addMessage(data.client_id, data.username, data.message, 'received');
             // Auto-sélectionner le client si aucun n'est sélectionné
             if (!selectedClient) {
                 selectClient(data.client_id);
@@ -152,7 +152,7 @@
         });
 
         // Ajouter un client à la liste
-        function addClientToList(clientId, address) {
+        function addClientToList(clientId, username, address) {
             const clientsList = document.getElementById('clients-list');
             const emptyState = clientsList.querySelector('.empty-state');
             if (emptyState) emptyState.remove();
@@ -162,9 +162,9 @@
             clientElement.id = `client-${clientId}`;
             clientElement.onclick = () => selectClient(clientId);
             clientElement.innerHTML = `
-                <div class="client-avatar">${address.charAt(0)}</div>
+                <div class="client-avatar">${username.charAt(0).toUpperCase()}</div>
                 <div class="client-info">
-                    <div class="client-name">Client ${clientId}</div>
+                    <div class="client-name">${username}</div>
                     <div class="client-address">${address}</div>
                 </div>
                 <div class="client-status"></div>
@@ -201,9 +201,9 @@
             const clientElement = document.getElementById(`client-${clientId}`);
             if (clientElement) {
                 clientElement.classList.add('active');
-                const address = clientElement.querySelector('.client-address').textContent;
+                const username = clientElement.querySelector('.client-name').textContent;
                 document.getElementById('selected-client').innerHTML = `
-                    <span>Répondre à: <strong>${address}</strong></span>
+                    <span>Répondre à: <strong>${username}</strong></span>
                 `;
                 messageInput.disabled = false;
                 sendBtn.disabled = false;

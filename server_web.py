@@ -19,7 +19,7 @@ EXIT_KEYWORDS = [
 ]
 
 # Stockage des clients connectés
-clients = {}  # {client_id: {'socket': socket_obj, 'address': address_string}}
+clients = {}  # {client_id: {'socket': socket_obj, 'address': address_string, 'username': username}}
 client_counter = 0
 
 def handle_client(client_socket, client_address, client_id):
@@ -27,12 +27,26 @@ def handle_client(client_socket, client_address, client_id):
     global clients
     
     address_str = f"{client_address[0]}:{client_address[1]}"
-    print(f"[NOUVELLE CONNEXION] Client {client_id} - {address_str}")
+    username = "Anonyme"  # Par défaut
+    
+    try:
+        # Recevoir le username comme premier message
+        username = client_socket.recv(1024).decode('utf-8').strip()
+        if not username:
+            username = f"Client_{client_id}"
+    except:
+        username = f"Client_{client_id}"
+    
+    # Mettre à jour les informations du client avec le username
+    clients[client_id]['username'] = username
+    
+    print(f"[NOUVELLE CONNEXION] {username} ({address_str}) - ID: {client_id}")
     
     # Notifier l'interface web
     socketio.emit('client_connected', {
         'client_id': client_id,
-        'address': address_str
+        'address': address_str,
+        'username': username
     })
     
     try:
@@ -46,21 +60,22 @@ def handle_client(client_socket, client_address, client_id):
             
             # Vérifier si le message contient un mot-clé de sortie
             if message.lower().strip() in EXIT_KEYWORDS:
-                print(f"[DÉCONNEXION] Client {client_id} se déconnecte (mot-clé: '{message}').")
+                print(f"[DÉCONNEXION] {username} se déconnecte (mot-clé: '{message}').")
                 client_socket.send("Au revoir !".encode('utf-8'))
                 connected = False
             else:
-                print(f"[Client {client_id}] {message}")
+                print(f"[{username}] {message}")
                 
                 # Envoyer le message à l'interface web
                 socketio.emit('message_received', {
                     'client_id': client_id,
                     'address': address_str,
+                    'username': username,
                     'message': message
                 })
     
     except Exception as e:
-        print(f"[ERREUR] Client {client_id}: {e}")
+        print(f"[ERREUR] {username}: {e}")
     
     finally:
         # Supprimer le client de la liste
@@ -68,12 +83,13 @@ def handle_client(client_socket, client_address, client_id):
             del clients[client_id]
         
         client_socket.close()
-        print(f"[FERMETURE] Client {client_id} déconnecté.")
+        print(f"[FERMETURE] {username} déconnecté.")
         
         # Notifier l'interface web
         socketio.emit('client_disconnected', {
             'client_id': client_id,
-            'address': address_str
+            'address': address_str,
+            'username': username
         })
 
 def start_tcp_server():
@@ -99,7 +115,8 @@ def start_tcp_server():
             # Stocker le client
             clients[client_id] = {
                 'socket': client_socket,
-                'address': f"{client_address[0]}:{client_address[1]}"
+                'address': f"{client_address[0]}:{client_address[1]}",
+                'username': f"Client_{client_id}"  # Sera mis à jour après réception du username
             }
             
             # Créer un thread pour gérer le client
@@ -132,7 +149,7 @@ def handle_connect():
     # Envoyer la liste actuelle des clients
     emit('clients_update', {
         'clients': [
-            {'id': cid, 'address': cdata['address']}
+            {'id': cid, 'address': cdata['address'], 'username': cdata.get('username', 'Anonyme')}
             for cid, cdata in clients.items()
         ]
     })

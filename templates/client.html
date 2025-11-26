@@ -47,7 +47,18 @@
                     </svg>
                 </div>
                 <h2>Connexion au serveur</h2>
-                <p>Entrez l'adresse IP du serveur pour établir la connexion</p>
+                <p>Entrez votre nom d'utilisateur et l'adresse du serveur</p>
+                
+                <div class="form-group">
+                    <label for="username">Nom d'utilisateur</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        placeholder="Votre nom" 
+                        class="input-field"
+                        required
+                    >
+                </div>
                 
                 <div class="form-group">
                     <label for="server-ip">Adresse IP du serveur</label>
@@ -139,8 +150,14 @@
 
         // Connexion au serveur
         function connectToServer() {
+            const username = document.getElementById('username').value.trim();
             const serverIp = document.getElementById('server-ip').value.trim();
             const serverPort = document.getElementById('server-port').value.trim();
+
+            if (!username) {
+                alert('Veuillez entrer un nom d\'utilisateur.');
+                return;
+            }
 
             if (!serverIp || !serverPort) {
                 alert('Veuillez entrer une adresse IP et un port valides.');
@@ -153,6 +170,7 @@
             socket.on('connect', () => {
                 // Une fois connecté au serveur Flask, demander la connexion TCP
                 socket.emit('connect_to_server', {
+                    username: username,
                     server_ip: serverIp,
                     server_port: serverPort
                 });
