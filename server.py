@@ -5,6 +5,13 @@ import threading
 HOST = '0.0.0.0'  # Écoute sur toutes les interfaces réseau
 PORT = 5555       # Port d'écoute
 
+# Dictionnaire des mots-clés pour terminer la conversation
+EXIT_KEYWORDS = [
+    'quit', 'exit', 'au revoir', 'aurevoir', 'à plus', 'a plus',
+    'bye', 'goodbye', 'ciao', 'tchao', 'bye bye',
+    'à bientôt', 'a bientot', 'adieu', 'fin'
+]
+
 def handle_client(client_socket, client_address):
     """Gère la communication avec un client connecté"""
     print(f"[NOUVELLE CONNEXION] {client_address} connecté.")
@@ -18,8 +25,10 @@ def handle_client(client_socket, client_address):
             if not message:
                 break
             
-            if message.lower() == 'quit':
-                print(f"[DÉCONNEXION] {client_address} se déconnecte.")
+            # Vérifier si le message contient un mot-clé de sortie
+            if message.lower().strip() in EXIT_KEYWORDS:
+                print(f"[DÉCONNEXION] {client_address} se déconnecte (mot-clé: '{message}').")
+                client_socket.send("Au revoir !".encode('utf-8'))
                 connected = False
             else:
                 print(f"[{client_address}] {message}")
@@ -28,7 +37,9 @@ def handle_client(client_socket, client_address):
                 response = input(f"Réponse pour {client_address}: ")
                 client_socket.send(response.encode('utf-8'))
                 
-                if response.lower() == 'quit':
+                # Vérifier si la réponse contient un mot-clé de sortie
+                if response.lower().strip() in EXIT_KEYWORDS:
+                    print(f"[DÉCONNEXION] Vous avez terminé la conversation avec {client_address}.")
                     connected = False
     
     except Exception as e:
