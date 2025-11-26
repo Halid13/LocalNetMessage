@@ -19,7 +19,7 @@ EXIT_KEYWORDS = [
 ]
 
 # Stockage des clients connectés
-clients = {}  # {client_id: {'socket': socket_obj, 'address': address_string, 'username': username}}
+clients = {}  # {client_id: {'socket': socket_obj, 'address': address_string, 'username': username, 'messages': []}}
 client_counter = 0
 
 def handle_client(client_socket, client_address, client_id):
@@ -39,6 +39,7 @@ def handle_client(client_socket, client_address, client_id):
     
     # Mettre à jour les informations du client avec le username
     clients[client_id]['username'] = username
+    clients[client_id]['messages'] = []  # Historique des messages pour ce client
     
     print(f"[NOUVELLE CONNEXION] {username} ({address_str}) - ID: {client_id}")
     
@@ -65,6 +66,15 @@ def handle_client(client_socket, client_address, client_id):
                 connected = False
             else:
                 print(f"[{username}] {message}")
+                
+                # Stocker le message dans l'historique du client
+                if client_id in clients:
+                    clients[client_id]['messages'].append({
+                        'type': 'received',
+                        'sender': username,
+                        'message': message,
+                        'timestamp': __import__('datetime').datetime.now().isoformat()
+                    })
                 
                 # Envoyer le message à l'interface web
                 socketio.emit('message_received', {
@@ -116,7 +126,8 @@ def start_tcp_server():
             clients[client_id] = {
                 'socket': client_socket,
                 'address': f"{client_address[0]}:{client_address[1]}",
-                'username': f"Client_{client_id}"  # Sera mis à jour après réception du username
+                'username': f"Client_{client_id}",  # Sera mis à jour après réception du username
+                'messages': []  # Historique des messages
             }
             
             # Créer un thread pour gérer le client
@@ -159,6 +170,22 @@ def handle_disconnect():
     """Client web déconnecté"""
     print('[WEB] Client web déconnecté')
 
+@socketio.on('get_client_messages')
+def handle_get_client_messages(data):
+    """Récupérer l'historique des messages d'un client"""
+    client_id = data.get('client_id')
+    
+    if client_id in clients:
+        emit('client_messages', {
+            'client_id': client_id,
+            'messages': clients[client_id]['messages']
+        })
+    else:
+        emit('client_messages', {
+            'client_id': client_id,
+            'messages': []
+        })
+
 @socketio.on('send_message')
 def handle_send_message(data):
     """Envoyer un message à un client spécifique"""
@@ -173,6 +200,14 @@ def handle_send_message(data):
     try:
         # Envoyer le message au client TCP
         client_socket.send(message.encode('utf-8'))
+        
+        # Stocker le message dans l'historique du client
+        clients[client_id]['messages'].append({
+            'type': 'sent',
+            'sender': 'Serveur',
+            'message': message,
+            'timestamp': __import__('datetime').datetime.now().isoformat()
+        })
         
         # Confirmer l'envoi à l'interface web
         emit('message_sent', {
