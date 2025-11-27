@@ -73,7 +73,8 @@ def handle_client(client_socket, client_address, client_id):
                         'type': 'received',
                         'sender': username,
                         'message': message,
-                        'timestamp': __import__('datetime').datetime.now().isoformat()
+                        'timestamp': __import__('datetime').datetime.now().isoformat(),
+                        'read': False  # Statut de lecture
                     })
                 
                 # Envoyer le message à l'interface web
@@ -186,13 +187,36 @@ def handle_get_client_messages(data):
             'messages': []
         })
 
+@socketio.on('mark_messages_read')
+def handle_mark_messages_read(data):
+    """Marquer les messages d'un client comme lus"""
+    client_id = data.get('client_id')
+    
+    if client_id in clients:
+        for msg in clients[client_id]['messages']:
+            if msg['type'] == 'received' and not msg.get('read', False):
+                msg['read'] = True
+        
+        # Notifier que les messages ont été lus
+        emit('messages_marked_read', {'client_id': client_id}, broadcast=True)
+
 @socketio.on('send_message')
 def handle_send_message(data):
     """Envoyer un message à un client spécifique"""
     client_id = data.get('client_id')
     message = data.get('message', '').strip()
     
-    if not message or client_id not in clients:
+    # Validation du message
+    if not message:
+        emit('error', {'message': 'Le message ne peut pas être vide'})
+        return
+    
+    if len(message) > 5000:
+        emit('error', {'message': 'Message trop long (maximum 5000 caractères)'})
+        return
+    
+    if client_id not in clients:
+        emit('error', {'message': 'Client non trouvé'})
         return
     
     client_socket = clients[client_id]['socket']
@@ -206,7 +230,8 @@ def handle_send_message(data):
             'type': 'sent',
             'sender': 'Serveur',
             'message': message,
-            'timestamp': __import__('datetime').datetime.now().isoformat()
+            'timestamp': __import__('datetime').datetime.now().isoformat(),
+            'read': False  # Sera marqué comme lu quand le client l'accuse réception
         })
         
         # Confirmer l'envoi à l'interface web

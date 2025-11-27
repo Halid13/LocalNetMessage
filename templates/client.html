@@ -273,7 +273,7 @@
                         <span class="message-sender">${sender}</span>
                         <span class="message-time">${new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</span>
                     </div>
-                    <div class="message-text">${escapeHtml(message)}</div>
+                    <div class="message-text">${formatMessage(escapeHtml(message))}</div>
                 </div>
             `;
             messagesContainer.appendChild(messageElement);
@@ -328,6 +328,20 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        
+        // Formater le message (gras, italique, emojis)
+        function formatMessage(text) {
+            // Gras: **texte** -> <strong>texte</strong>
+            text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            
+            // Italique: *texte* -> <em>texte</em>
+            text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            
+            // Saut de ligne
+            text = text.replace(/\n/g, '<br>');
+            
+            return text;
         }
     </script>
 </body>
