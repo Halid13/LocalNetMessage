@@ -2,6 +2,7 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 import socket
 import threading
+import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'localnetmessage-client-secret-key-2025'
@@ -19,6 +20,7 @@ client_socket = None
 connected = False
 receive_thread = None
 username = None  # Stocker le nom d'utilisateur
+message_counter = 0  # Compteur pour les IDs de messages
 
 def receive_messages():
     """Thread pour recevoir les messages du serveur"""
@@ -131,19 +133,36 @@ def handle_connect_to_server(data):
 @socketio.on('send_message')
 def handle_send_message(data):
     """Envoyer un message au serveur"""
-    global client_socket, connected
+    global client_socket, connected, message_counter
     
     message = data.get('message', '').strip()
     
-    if not message or not connected or not client_socket:
+    # Validation du message
+    if not message:
+        emit('error', {'message': 'Le message ne peut pas être vide.'})
+        return
+    
+    if len(message) > 5000:
+        emit('error', {'message': 'Le message ne peut pas dépasser 5000 caractères.'})
+        return
+    
+    if not connected or not client_socket:
+        emit('error', {'message': 'Non connecté au serveur.'})
         return
     
     try:
+        # Générer un ID unique pour le message
+        message_counter += 1
+        message_id = f"client_{message_counter}_{int(time.time() * 1000)}"
+        
         # Envoyer le message au serveur TCP
         client_socket.send(message.encode('utf-8'))
         
-        # Confirmer l'envoi à l'interface web
-        emit('message_sent', {'message': message})
+        # Confirmer l'envoi à l'interface web avec l'ID
+        emit('message_sent', {
+            'message': message,
+            'message_id': message_id
+        })
         print(f"[ENVOYÉ] {message}")
         
         # Vérifier si c'est un mot-clé de sortie

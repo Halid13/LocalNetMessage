@@ -122,11 +122,41 @@
             </div>
 
             <div class="input-container">
+                <div class="format-toolbar">
+                    <button class="btn-format" onclick="formatText('bold')" title="Gras (Ctrl+B)">
+                        <strong>B</strong>
+                    </button>
+                    <button class="btn-format" onclick="formatText('italic')" title="Italique (Ctrl+I)">
+                        <em>I</em>
+                    </button>
+                    <button class="btn-format" onclick="toggleEmojiPicker()" title="Emojis">
+                        😊
+                    </button>
+                    <div class="emoji-picker" id="emoji-picker" style="display: none;">
+                        <button onclick="insertEmoji('😊')">😊</button>
+                        <button onclick="insertEmoji('😂')">😂</button>
+                        <button onclick="insertEmoji('❤️')">❤️</button>
+                        <button onclick="insertEmoji('👍')">👍</button>
+                        <button onclick="insertEmoji('🎉')">🎉</button>
+                        <button onclick="insertEmoji('🔥')">🔥</button>
+                        <button onclick="insertEmoji('✨')">✨</button>
+                        <button onclick="insertEmoji('💯')">💯</button>
+                        <button onclick="insertEmoji('🚀')">🚀</button>
+                        <button onclick="insertEmoji('⭐')">⭐</button>
+                        <button onclick="insertEmoji('💪')">💪</button>
+                        <button onclick="insertEmoji('🙏')">🙏</button>
+                        <button onclick="insertEmoji('😎')">😎</button>
+                        <button onclick="insertEmoji('🤔')">🤔</button>
+                        <button onclick="insertEmoji('👏')">👏</button>
+                        <button onclick="insertEmoji('🎯')">🎯</button>
+                    </div>
+                </div>
                 <div class="input-wrapper">
                     <textarea 
                         id="message-input" 
                         placeholder="Tapez votre message ici..."
                         rows="1"
+                        maxlength="5000"
                     ></textarea>
                     <button class="btn-send" id="send-btn" onclick="sendMessage()">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -206,7 +236,11 @@
             });
 
             socket.on('message_sent', (data) => {
-                addMessage('Vous', data.message, 'sent');
+                addMessage('Vous', data.message, 'sent', data.message_id);
+            });
+            
+            socket.on('message_read', (data) => {
+                updateReadStatus(data.message_id, 'read');
             });
         }
 
@@ -250,34 +284,70 @@
         // Envoyer un message
         function sendMessage() {
             const message = messageInput.value.trim();
-            if (message && socket && isConnected) {
-                socket.emit('send_message', {
-                    message: message
-                });
-                messageInput.value = '';
-                autoResize();
+            
+            // Validation du message
+            if (!message) {
+                showValidationError('Le message ne peut pas être vide.');
+                return;
             }
+            
+            if (message.length > 5000) {
+                showValidationError('Le message ne peut pas dépasser 5000 caractères.');
+                return;
+            }
+            
+            if (!socket || !isConnected) {
+                showValidationError('Vous n\'êtes pas connecté au serveur.');
+                return;
+            }
+            
+            socket.emit('send_message', {
+                message: message
+            });
+            messageInput.value = '';
+            updateCharCount();
+            autoResize();
         }
 
         // Ajouter un message
-        function addMessage(sender, message, type) {
+        function addMessage(sender, message, type, messageId = null) {
             const welcomeMsg = messagesContainer.querySelector('.welcome-message');
             if (welcomeMsg) welcomeMsg.remove();
 
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+            const dateString = now.toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            const fullTimestamp = `${dateString} ${timeString}`;
+
             const messageElement = document.createElement('div');
             messageElement.className = `message ${type}`;
+            if (messageId) {
+                messageElement.dataset.messageId = messageId;
+            }
+            
+            // Statut de lecture pour les messages envoyés
+            const readStatus = type === 'sent' ? '<span class="read-status" data-status="sent">✓</span>' : '';
+            
             messageElement.innerHTML = `
                 <div class="message-avatar">${sender.charAt(0)}</div>
                 <div class="message-content">
                     <div class="message-header">
                         <span class="message-sender">${sender}</span>
-                        <span class="message-time">${new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</span>
+                        <span class="message-time">${fullTimestamp}</span>
                     </div>
                     <div class="message-text">${formatMessage(escapeHtml(message))}</div>
+                    ${readStatus}
                 </div>
             `;
             messagesContainer.appendChild(messageElement);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Notification sonore pour les messages reçus
+            if (type === 'received') {
+                playNotificationSound();
+            }
+            
+            return messageElement;
         }
 
         // Ajouter un message système
@@ -343,6 +413,143 @@
             
             return text;
         }
+        
+        // Formater le texte (gras, italique)
+        function formatText(format) {
+            const textarea = messageInput;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            
+            if (!selectedText) {
+                alert('Veuillez sélectionner du texte à formater.');
+                return;
+            }
+            
+            let formattedText = '';
+            if (format === 'bold') {
+                formattedText = `**${selectedText}**`;
+            } else if (format === 'italic') {
+                formattedText = `*${selectedText}*`;
+            }
+            
+            textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+            updateCharCount();
+        }
+        
+        // Toggle emoji picker
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emoji-picker');
+            picker.style.display = picker.style.display === 'none' ? 'grid' : 'none';
+        }
+        
+        // Insérer un emoji
+        function insertEmoji(emoji) {
+            const textarea = messageInput;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            
+            textarea.value = textarea.value.substring(0, start) + emoji + textarea.value.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+            
+            toggleEmojiPicker();
+            updateCharCount();
+        }
+        
+        // Mettre à jour le compteur de caractères
+        function updateCharCount() {
+            // Fonction désactivée - compteur retiré de l'interface
+        }
+        
+        // Afficher une erreur de validation
+        function showValidationError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'validation-error';
+            errorDiv.textContent = message;
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+                z-index: 10000;
+                animation: slideInRight 0.3s ease-out;
+            `;
+            
+            document.body.appendChild(errorDiv);
+            
+            setTimeout(() => {
+                errorDiv.style.animation = 'slideOutRight 0.3s ease-out';
+                setTimeout(() => errorDiv.remove(), 300);
+            }, 3000);
+        }
+        
+        // Jouer un son de notification
+        function playNotificationSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+        
+        // Mettre à jour le statut de lecture
+        function updateReadStatus(messageId, status) {
+            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (messageElement) {
+                const readStatusElement = messageElement.querySelector('.read-status');
+                if (readStatusElement) {
+                    readStatusElement.dataset.status = status;
+                    if (status === 'read') {
+                        readStatusElement.innerHTML = '✓✓';
+                        readStatusElement.style.color = '#48bb78';
+                    }
+                }
+            }
+        }
+        
+        // Mise à jour du compteur lors de la saisie
+        messageInput.addEventListener('input', () => {
+            updateCharCount();
+            autoResize();
+        });
+        
+        // Raccourcis clavier pour le formatage
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                formatText('bold');
+            } else if (e.ctrlKey && e.key === 'i') {
+                e.preventDefault();
+                formatText('italic');
+            }
+        });
+        
+        // Fermer le sélecteur d'emojis si on clique ailleurs
+        document.addEventListener('click', (e) => {
+            const emojiPicker = document.getElementById('emoji-picker');
+            const emojiButton = e.target.closest('.btn-format');
+            
+            if (emojiPicker && !emojiPicker.contains(e.target) && !emojiButton) {
+                emojiPicker.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
