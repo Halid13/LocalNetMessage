@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
 import socket
 import threading
@@ -10,6 +10,9 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Configuration du serveur TCP
 HOST = '0.0.0.0'
 PORT = 12345
+
+# Nom d'utilisateur du serveur
+server_username = 'Serveur'  # Par défaut
 
 # Dictionnaire des mots-clés pour terminer la conversation
 EXIT_KEYWORDS = [
@@ -152,6 +155,21 @@ def start_tcp_server():
 def index():
     """Page d'accueil - Interface du serveur"""
     return render_template('server.html')
+
+@app.route('/set_server_username', methods=['POST'])
+def set_server_username():
+    """Définir le nom d'utilisateur du serveur"""
+    global server_username
+    
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    
+    if username and len(username) >= 2:
+        server_username = username
+        print(f'[SERVEUR] Nom d\'utilisateur défini: {server_username}')
+        return jsonify({'success': True, 'username': server_username})
+    else:
+        return jsonify({'success': False, 'error': 'Nom d\'utilisateur invalide'}), 400
 
 # Événements SocketIO
 @socketio.on('connect')
