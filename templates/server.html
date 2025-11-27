@@ -169,6 +169,9 @@
             // Si ce client est sélectionné, afficher le message
             if (selectedClient === data.client_id) {
                 addMessageToDisplay(data.username, data.message, 'received');
+            } else {
+                // Si un autre client est sélectionné, afficher une notification
+                showNotification(data.client_id);
             }
             
             // Auto-sélectionner le client si aucun n'est sélectionné
@@ -225,6 +228,7 @@
                     <div class="client-address">${address}</div>
                 </div>
                 <div class="client-status"></div>
+                <span class="notification-badge" id="badge-${clientId}" style="display: none;">0</span>
             `;
             clientsList.appendChild(clientElement);
         }
@@ -274,6 +278,9 @@
         // Charger la conversation d'un client
         function loadClientConversation(clientId) {
             messagesContainer.innerHTML = '';
+            
+            // Masquer la notification pour ce client
+            hideNotification(clientId);
             
             if (!clientConversations[clientId] || clientConversations[clientId].length === 0) {
                 showWelcomeMessage();
@@ -347,6 +354,38 @@
                     <p>Sélectionnez un client pour commencer la conversation.</p>
                 </div>
             `;
+        }
+
+        // Afficher une notification pour un client
+        function showNotification(clientId) {
+            const badge = document.getElementById(`badge-${clientId}`);
+            const clientItem = document.getElementById(`client-${clientId}`);
+            
+            if (badge) {
+                let count = parseInt(badge.textContent) || 0;
+                count++;
+                badge.textContent = count;
+                badge.style.display = 'flex';
+            }
+            
+            if (clientItem) {
+                clientItem.classList.add('has-notification');
+            }
+        }
+
+        // Masquer la notification pour un client
+        function hideNotification(clientId) {
+            const badge = document.getElementById(`badge-${clientId}`);
+            const clientItem = document.getElementById(`client-${clientId}`);
+            
+            if (badge) {
+                badge.textContent = '0';
+                badge.style.display = 'none';
+            }
+            
+            if (clientItem) {
+                clientItem.classList.remove('has-notification');
+            }
         }
 
         // Ajouter un message (ancienne fonction - gardée pour compatibilité)

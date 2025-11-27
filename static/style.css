@@ -287,6 +287,16 @@ body {
     box-shadow: var(--shadow-md);
 }
 
+.client-item.has-notification {
+    background: #fef5e7;
+    border-left: 3px solid #f39c12;
+}
+
+.client-item.active.has-notification {
+    background: var(--primary-gradient);
+    border-left: none;
+}
+
 .client-avatar {
     width: 40px;
     height: 40px;
@@ -335,6 +345,39 @@ body {
     border-radius: 50%;
     background: #48bb78;
     flex-shrink: 0;
+}
+
+/* Notification Badge */
+.notification-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #f39c12;
+    color: white;
+    border-radius: 50%;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0 6px;
+    box-shadow: 0 2px 4px rgba(243, 156, 18, 0.4);
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.client-item.active .notification-badge {
+    display: none !important;
 }
 
 /* ========================================
