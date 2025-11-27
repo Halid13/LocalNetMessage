@@ -46,6 +46,12 @@ def handle_client(client_socket, client_address, client_id):
     
     print(f"[NOUVELLE CONNEXION] {username} ({address_str}) - ID: {client_id}")
     
+    # Envoyer le username du serveur au client TCP (pour affichage côté client)
+    try:
+        client_socket.send(f"[SERVER_USERNAME]:{server_username}".encode('utf-8'))
+    except Exception as e:
+        print(f"[WARN] Impossible d'envoyer le SERVER_USERNAME au client {client_id}: {e}")
+
     # Notifier l'interface web
     socketio.emit('client_connected', {
         'client_id': client_id,

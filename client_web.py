@@ -40,9 +40,15 @@ def receive_messages():
                         connected = False
                         break
                     
-                    # Envoyer le message à l'interface web
-                    socketio.emit('message_received', {'message': message})
-                    print(f"[REÇU] {message}")
+                    # Si le message transporte le username du serveur, le propager et ne pas l'afficher comme chat
+                    if message.startswith('[SERVER_USERNAME]:'):
+                        server_name = message.split(':', 1)[1].strip()
+                        socketio.emit('server_info', {'server_username': server_name})
+                        print(f"[INFO] Nom du serveur reçu: {server_name}")
+                    else:
+                        # Envoyer le message à l'interface web
+                        socketio.emit('message_received', {'message': message})
+                        print(f"[REÇU] {message}")
                     
                     # Vérifier si c'est un mot-clé de sortie
                     if message.lower().strip() in EXIT_KEYWORDS:
