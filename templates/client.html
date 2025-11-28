@@ -175,7 +175,6 @@
     <script>
         let socket = null;
         let isConnected = false;
-        let serverUsername = 'Serveur';
         const messageInput = document.getElementById('message-input');
         const messagesContainer = document.getElementById('messages');
 
@@ -232,15 +231,8 @@
                 addSystemMessage('Erreur: ' + data.message);
             });
 
-            socket.on('server_info', (data) => {
-                if (data.server_username) {
-                    serverUsername = data.server_username;
-                    addSystemMessage(`Nom du serveur: ${serverUsername}`);
-                }
-            });
-
             socket.on('message_received', (data) => {
-                addMessage(serverUsername, data.message, 'received');
+                addMessage('Serveur', data.message, 'received');
             });
 
             socket.on('message_sent', (data) => {

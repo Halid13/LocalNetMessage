@@ -59,6 +59,13 @@
     box-sizing: border-box;
 }
 
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
         'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -66,7 +73,6 @@ body {
     -moz-osx-font-smoothing: grayscale;
     background: var(--bg-primary);
     color: var(--text-primary);
-    overflow: hidden;
 }
 
 /* ========================================
@@ -76,7 +82,9 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100%;
     max-width: 100vw;
+    overflow: hidden;
 }
 
 /* ========================================
@@ -88,6 +96,7 @@ body {
     padding: var(--spacing-lg) var(--spacing-xl);
     box-shadow: var(--shadow-sm);
     z-index: 10;
+    flex-shrink: 0;
 }
 
 .header-content {
@@ -180,6 +189,7 @@ body {
     overflow: hidden;
     gap: var(--spacing-lg);
     padding: var(--spacing-lg);
+    min-height: 0;
 }
 
 /* ========================================
@@ -193,6 +203,8 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0;
+    flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -467,6 +479,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0;
 }
 
 .client-view .chat-container {
@@ -481,6 +494,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .chat-header h2 {
@@ -537,6 +551,7 @@ body {
     overflow-y: auto;
     padding: var(--spacing-lg);
     background: var(--bg-primary);
+    min-height: 0;
 }
 
 .messages-container::-webkit-scrollbar {
@@ -715,6 +730,7 @@ body {
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
     position: relative;
+    flex-shrink: 0;
 }
 
 .selected-client {
