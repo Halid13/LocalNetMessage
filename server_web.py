@@ -45,6 +45,12 @@ def handle_client(client_socket, client_address, client_id):
     clients[client_id]['messages'] = []  # Historique des messages pour ce client
     
     print(f"[NOUVELLE CONNEXION] {username} ({address_str}) - ID: {client_id}")
+
+    # Informer le client TCP du nom d'utilisateur du serveur
+    try:
+        client_socket.send(f"__SERVER_NAME__:{server_username}".encode('utf-8'))
+    except Exception as e:
+        print(f"[AVERTISSEMENT] Impossible d'envoyer le nom du serveur au client {client_id}: {e}")
     
     # Notifier l'interface web
     socketio.emit('client_connected', {

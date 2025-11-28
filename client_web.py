@@ -20,6 +20,7 @@ client_socket = None
 connected = False
 receive_thread = None
 username = None  # Stocker le nom d'utilisateur
+server_display_name = 'Serveur'  # Nom du serveur affiché côté client
 message_counter = 0  # Compteur pour les IDs de messages
 
 def receive_messages():
@@ -40,9 +41,18 @@ def receive_messages():
                         connected = False
                         break
                     
-                    # Envoyer le message à l'interface web
-                    socketio.emit('message_received', {'message': message})
-                    print(f"[REÇU] {message}")
+                    # Intercepter le nom du serveur s'il est envoyé par le serveur TCP
+                    if message.startswith("__SERVER_NAME__:"):
+                        global server_display_name
+                        server_display_name = message.split(":", 1)[1].strip() or 'Serveur'
+                        print(f"[INFO] Nom du serveur défini: {server_display_name}")
+                    else:
+                        # Envoyer le message à l'interface web en incluant le nom du serveur
+                        socketio.emit('message_received', {
+                            'message': message,
+                            'server_username': server_display_name
+                        })
+                        print(f"[REÇU] {message}")
                     
                     # Vérifier si c'est un mot-clé de sortie
                     if message.lower().strip() in EXIT_KEYWORDS:
@@ -106,6 +116,10 @@ def handle_connect_to_server(data):
         connected = True
         print(f"[CONNECTÉ] {username} connecté au serveur {server_ip}:{server_port}")
         
+        # Réinitialiser le nom du serveur affiché
+        global server_display_name
+        server_display_name = 'Serveur'
+
         # Démarrer le thread de réception
         receive_thread = threading.Thread(target=receive_messages)
         receive_thread.daemon = True

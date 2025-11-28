@@ -232,7 +232,8 @@
             });
 
             socket.on('message_received', (data) => {
-                addMessage('Serveur', data.message, 'received');
+                const senderName = data.server_username || 'Serveur';
+                addMessage(senderName, data.message, 'received');
             });
 
             socket.on('message_sent', (data) => {
