@@ -52,7 +52,6 @@ def receive_messages():
                             'message': message,
                             'server_username': server_display_name
                         })
-                        print(f"[REÇU] {message}")
                     
                     # Vérifier si c'est un mot-clé de sortie
                     if message.lower().strip() in EXIT_KEYWORDS:
@@ -177,7 +176,6 @@ def handle_send_message(data):
             'message': message,
             'message_id': message_id
         })
-        print(f"[ENVOYÉ] {message}")
         
         # Vérifier si c'est un mot-clé de sortie
         if message.lower().strip() in EXIT_KEYWORDS:

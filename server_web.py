@@ -74,8 +74,6 @@ def handle_client(client_socket, client_address, client_id):
                 client_socket.send("Au revoir !".encode('utf-8'))
                 connected = False
             else:
-                print(f"[{username}] {message}")
-                
                 # Stocker le message dans l'historique du client
                 if client_id in clients:
                     clients[client_id]['messages'].append({
@@ -162,6 +160,11 @@ def index():
     """Page d'accueil - Interface du serveur"""
     return render_template('server.html')
 
+@app.route('/client')
+def client():
+    """Page client - Interface du client"""
+    return render_template('client.html')
+
 @app.route('/set_server_username', methods=['POST'])
 def set_server_username():
     """Définir le nom d'utilisateur du serveur"""
@@ -224,6 +227,47 @@ def handle_mark_messages_read(data):
         # Notifier que les messages ont été lus
         emit('messages_marked_read', {'client_id': client_id}, broadcast=True)
 
+@socketio.on('connect_to_server')
+def handle_client_connect_to_server(data):
+    """Gérer la connexion d'un client web via TCP"""
+    username = data.get('username', 'Anonyme')
+    server_ip = data.get('server_ip', '127.0.0.1')
+    server_port = int(data.get('server_port', PORT))
+    
+    try:
+        # Créer une connexion TCP au serveur (localhost pour l'instant car c'est le même serveur)
+        # Dans ce cas, on simule une connexion client directe
+        print(f"[CLIENT WEB] {username} tente de se connecter via l'interface web")
+        
+        # Pour l'instant, on va créer un client TCP qui se connecte au serveur local
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect((server_ip, server_port))
+        
+        # Envoyer le username
+        client_socket.send(username.encode('utf-8'))
+        
+        # Stocker ce client avec un ID spécial pour les clients web
+        global client_counter
+        client_counter += 1
+        web_client_id = f"web_{client_counter}"
+        
+        # Note: Ce client sera géré par le thread TCP normal
+        # On confirme juste la connexion à l'interface web
+        emit('connected', {
+            'server_ip': server_ip,
+            'server_port': server_port,
+            'username': username,
+            'client_id': web_client_id
+        })
+        
+        print(f"[CLIENT WEB] {username} connecté avec succès")
+        
+    except Exception as e:
+        print(f"[ERREUR CLIENT WEB] {e}")
+        emit('connection_error', {
+            'message': f'Impossible de se connecter: {str(e)}'
+        })
+
 @socketio.on('send_message')
 def handle_send_message(data):
     """Envoyer un message à un client spécifique"""
@@ -263,8 +307,6 @@ def handle_send_message(data):
             'client_id': client_id,
             'message': message
         })
-        
-        print(f"[ENVOYÉ] Message envoyé au client {client_id}: {message}")
         
         # Vérifier si c'est un mot-clé de sortie
         if message.lower().strip() in EXIT_KEYWORDS:

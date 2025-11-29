@@ -194,7 +194,8 @@
                 return;
             }
 
-            // Se connecter au serveur Flask local qui gérera la connexion TCP
+            // Se connecter au serveur Flask local (client_web.py) qui gérera la connexion TCP
+            // Le client_web.py doit tourner localement sur le port 5001
             socket = io('http://localhost:5001');
 
             socket.on('connect', () => {
