@@ -6,107 +6,170 @@
     <title>LocalNetMessage - Client</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/modern-overrides.css">
+    <link rel="stylesheet" href="/static/client-modern.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container client-view">
         <!-- Header -->
-        <header class="header">
+        <header class="header client-header">
             <div class="header-content">
-                <div class="logo">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <circle cx="16" cy="16" r="14" stroke="url(#gradient)" stroke-width="2"/>
-                        <circle cx="16" cy="16" r="6" fill="url(#gradient)"/>
-                        <defs>
-                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#667eea"/>
-                                <stop offset="100%" style="stop-color:#764ba2"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                    <h1>LocalNetMessage</h1>
+                <div class="logo-section">
+                    <div class="logo-wrapper">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" class="logo-svg">
+                            <circle cx="20" cy="20" r="18" stroke="url(#gradient)" stroke-width="2.5"/>
+                            <circle cx="20" cy="20" r="8" fill="url(#gradient)"/>
+                            <circle cx="20" cy="20" r="3" fill="white" opacity="0.9"/>
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#667eea"/>
+                                    <stop offset="100%" style="stop-color:#764ba2"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="logo-text">
+                        <h1>LocalNetMessage</h1>
+                        <span class="client-badge">Client</span>
+                    </div>
                 </div>
-                <div class="connection-status" id="connection-status">
-                    <span class="status-dot disconnected"></span>
-                    <span>Déconnecté</span>
+                <div class="header-actions">
+                    <div class="connection-status-wrapper" id="connection-status">
+                        <div class="status-indicator">
+                            <span class="status-pulse disconnected"></span>
+                            <span class="status-dot disconnected"></span>
+                        </div>
+                        <span class="status-text">Déconnecté</span>
+                    </div>
+                    <button class="theme-toggle-btn" id="theme-toggle" onclick="toggleTheme()" aria-label="Changer le thème">
+                        <span class="icon-sun">☀️</span>
+                    </button>
                 </div>
-                <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Changer le thème"></button>
             </div>
         </header>
 
         <!-- Connection Panel -->
-        <div class="connection-panel" id="connection-panel">
-            <div class="connection-card">
-                <div class="connection-icon">
-                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                        <circle cx="32" cy="32" r="28" stroke="url(#gradient2)" stroke-width="3"/>
-                        <path d="M32 20v24M20 32h24" stroke="url(#gradient2)" stroke-width="3" stroke-linecap="round"/>
-                        <defs>
-                            <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#667eea"/>
-                                <stop offset="100%" style="stop-color:#764ba2"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                </div>
-                <h2>Connexion au serveur</h2>
-                <p>Entrez votre nom d'utilisateur et l'adresse du serveur</p>
-                
-                <div class="form-group">
-                    <label for="username">Nom d'utilisateur</label>
-                    <input 
-                        type="text" 
-                        id="username" 
-                        placeholder="Votre nom" 
-                        class="input-field"
-                        required
-                    >
-                </div>
-                
-                <div class="form-group">
-                    <label for="server-ip">Adresse IP du serveur</label>
-                    <input 
-                        type="text" 
-                        id="server-ip" 
-                        placeholder="127.0.0.1" 
-                        value="127.0.0.1"
-                        class="input-field"
-                    >
+        <div class="connection-panel modern-panel" id="connection-panel">
+            <div class="connection-background">
+                <div class="gradient-orb orb-1"></div>
+                <div class="gradient-orb orb-2"></div>
+                <div class="gradient-orb orb-3"></div>
+            </div>
+            
+            <div class="connection-card glass-card">
+                <div class="connection-header">
+                    <div class="connection-icon-wrapper">
+                        <svg width="80" height="80" viewBox="0 0 80 80" fill="none" class="connection-icon">
+                            <circle cx="40" cy="40" r="35" stroke="url(#gradient3)" stroke-width="3" opacity="0.3"/>
+                            <circle cx="40" cy="40" r="28" stroke="url(#gradient3)" stroke-width="3"/>
+                            <path d="M40 25v30M25 40h30" stroke="url(#gradient3)" stroke-width="3.5" stroke-linecap="round"/>
+                            <circle cx="40" cy="40" r="5" fill="url(#gradient3)"/>
+                            <defs>
+                                <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#667eea"/>
+                                    <stop offset="100%" style="stop-color:#764ba2"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h2 class="connection-title">Connexion au serveur</h2>
+                    <p class="connection-subtitle">Entrez vos informations pour démarrer la conversation</p>
                 </div>
                 
-                <div class="form-group">
-                    <label for="server-port">Port</label>
-                    <input 
-                        type="number" 
-                        id="server-port" 
-                        placeholder="12345" 
-                        value="12345"
-                        class="input-field"
-                    >
-                </div>
+                <div class="connection-form">
+                    <div class="form-group modern-form-group">
+                        <label for="username" class="form-label">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+                                <path d="M9 9a4 4 0 100-8 4 4 0 000 8zm0 2c-4 0-8 2-8 4v1h16v-1c0-2-4-4-8-4z"/>
+                            </svg>
+                            Nom d'utilisateur
+                        </label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            placeholder="Votre nom" 
+                            class="input-field modern-input"
+                            required
+                            autocomplete="off"
+                        >
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group modern-form-group">
+                            <label for="server-ip" class="form-label">
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+                                    <path d="M2 4h14v2H2V4zm0 4h14v2H2V8zm0 4h14v2H2v-2z"/>
+                                    <circle cx="4" cy="5" r="0.5" fill="white"/>
+                                    <circle cx="4" cy="9" r="0.5" fill="white"/>
+                                    <circle cx="4" cy="13" r="0.5" fill="white"/>
+                                </svg>
+                                Adresse IP
+                            </label>
+                            <input 
+                                type="text" 
+                                id="server-ip" 
+                                placeholder="127.0.0.1" 
+                                value="127.0.0.1"
+                                class="input-field modern-input"
+                            >
+                        </div>
+                        
+                        <div class="form-group modern-form-group">
+                            <label for="server-port" class="form-label">
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+                                    <path d="M9 2L3 5v6c0 3.5 2.5 6.5 6 7.3 3.5-.8 6-3.8 6-7.3V5l-6-3zm0 2.2l4 2V11c0 2.5-1.7 4.7-4 5.3-2.3-.6-4-2.8-4-5.3V6.2l4-2z"/>
+                                </svg>
+                                Port
+                            </label>
+                            <input 
+                                type="number" 
+                                id="server-port" 
+                                placeholder="12345" 
+                                value="12345"
+                                class="input-field modern-input"
+                            >
+                        </div>
+                    </div>
 
-                <button class="btn-connect" onclick="connectToServer()">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9V7h2v6zm0-8H9V3h2v2z"/>
-                    </svg>
-                    Se connecter
-                </button>
+                    <button class="btn-connect modern-connect-btn" onclick="connectToServer()">
+                        <span class="btn-content">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-1 11.5l-3-3 1.5-1.5 1.5 1.5 3.5-3.5 1.5 1.5-5 5z"/>
+                            </svg>
+                            Se connecter
+                        </span>
+                        <div class="btn-shimmer"></div>
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Chat Area -->
-        <div class="chat-container client-chat" id="chat-container" style="display: none;">
-            <div class="chat-header">
-                <div class="server-info-header">
-                    <h2>Conversation avec le serveur</h2>
-                    <span id="server-address-display"></span>
+        <div class="chat-container modern-chat-container client-chat" id="chat-container" style="display: none;">
+            <div class="chat-header modern-chat-header">
+                <div class="chat-header-info">
+                    <div class="server-avatar">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/>
+                            <circle cx="6" cy="7" r="0.8" fill="white"/>
+                            <circle cx="6" cy="12" r="0.8" fill="white"/>
+                            <circle cx="6" cy="17" r="0.8" fill="white"/>
+                        </svg>
+                    </div>
+                    <div class="server-details">
+                        <h2>Serveur</h2>
+                        <span class="server-address" id="server-address-display"></span>
+                    </div>
                 </div>
                 <div class="chat-actions">
-                    <button class="btn-icon" onclick="clearMessages()" title="Effacer les messages">
+                    <button class="btn-icon modern-btn-icon" onclick="clearMessages()" title="Effacer les messages">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"/>
                         </svg>
                     </button>
-                    <button class="btn-icon btn-disconnect" onclick="disconnectFromServer()" title="Se déconnecter">
+                    <button class="btn-icon modern-btn-icon btn-disconnect" onclick="disconnectFromServer()" title="Se déconnecter">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 11-2 0V4H5v12h10v-2a1 1 0 112 0v3a1 1 0 01-1 1H4a1 1 0 01-1-1V3z"/>
                             <path d="M11 10a1 1 0 011-1h4.586l-1.293-1.293a1 1 0 011.414-1.414l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L16.586 11H12a1 1 0 01-1-1z"/>
@@ -115,59 +178,66 @@
                 </div>
             </div>
             
-            <div class="messages-container" id="messages">
-                <div class="welcome-message">
-                    <div class="welcome-icon">🎉</div>
+            <div class="messages-container modern-messages" id="messages">
+                <div class="welcome-message modern-welcome">
+                    <div class="welcome-icon-wrapper">
+                        <div class="welcome-icon">🎉</div>
+                    </div>
                     <h3>Connecté avec succès!</h3>
                     <p>Vous pouvez maintenant échanger des messages avec le serveur.</p>
                 </div>
             </div>
 
-            <div class="input-container">
-                <div class="format-toolbar">
-                    <button class="btn-format" onclick="formatText('bold')" title="Gras (Ctrl+B)">
-                        <strong>B</strong>
-                    </button>
-                    <button class="btn-format" onclick="formatText('italic')" title="Italique (Ctrl+I)">
-                        <em>I</em>
-                    </button>
-                    <button class="btn-format" onclick="toggleEmojiPicker()" title="Emojis">
-                        😊
-                    </button>
-                    <div class="emoji-picker" id="emoji-picker" style="display: none;">
-                        <button onclick="insertEmoji('😊')">😊</button>
-                        <button onclick="insertEmoji('😂')">😂</button>
-                        <button onclick="insertEmoji('❤️')">❤️</button>
-                        <button onclick="insertEmoji('👍')">👍</button>
-                        <button onclick="insertEmoji('🎉')">🎉</button>
-                        <button onclick="insertEmoji('🔥')">🔥</button>
-                        <button onclick="insertEmoji('✨')">✨</button>
-                        <button onclick="insertEmoji('💯')">💯</button>
-                        <button onclick="insertEmoji('🚀')">🚀</button>
-                        <button onclick="insertEmoji('⭐')">⭐</button>
-                        <button onclick="insertEmoji('💪')">💪</button>
-                        <button onclick="insertEmoji('🙏')">🙏</button>
-                        <button onclick="insertEmoji('😎')">😎</button>
-                        <button onclick="insertEmoji('🤔')">🤔</button>
-                        <button onclick="insertEmoji('👏')">👏</button>
-                        <button onclick="insertEmoji('🎯')">🎯</button>
+            <div class="input-container modern-input-container">
+                <div class="format-toolbar modern-toolbar">
+                    <div class="toolbar-group">
+                        <button class="btn-format modern-btn-format" onclick="formatText('bold')" title="Gras (Ctrl+B)">
+                            <strong>B</strong>
+                        </button>
+                        <button class="btn-format modern-btn-format" onclick="formatText('italic')" title="Italique (Ctrl+I)">
+                            <em>I</em>
+                        </button>
+                        <button class="btn-format modern-btn-format emoji-btn" onclick="toggleEmojiPicker()" title="Emojis">
+                            😊
+                        </button>
+                    </div>
+                    <div class="emoji-picker modern-emoji-picker" id="emoji-picker" style="display: none;">
+                        <div class="emoji-grid">
+                            <button onclick="insertEmoji('😊')">😊</button>
+                            <button onclick="insertEmoji('😂')">😂</button>
+                            <button onclick="insertEmoji('❤️')">❤️</button>
+                            <button onclick="insertEmoji('👍')">👍</button>
+                            <button onclick="insertEmoji('🎉')">🎉</button>
+                            <button onclick="insertEmoji('🔥')">🔥</button>
+                            <button onclick="insertEmoji('✨')">✨</button>
+                            <button onclick="insertEmoji('💯')">💯</button>
+                            <button onclick="insertEmoji('🚀')">🚀</button>
+                            <button onclick="insertEmoji('⭐')">⭐</button>
+                            <button onclick="insertEmoji('💪')">💪</button>
+                            <button onclick="insertEmoji('🙏')">🙏</button>
+                            <button onclick="insertEmoji('😎')">😎</button>
+                            <button onclick="insertEmoji('🤔')">🤔</button>
+                            <button onclick="insertEmoji('👏')">👏</button>
+                            <button onclick="insertEmoji('🎯')">🎯</button>
+                        </div>
                     </div>
                 </div>
-                <div class="input-wrapper">
+                <div class="input-wrapper modern-input-wrapper">
                     <textarea 
                         id="message-input" 
-                        placeholder="Tapez votre message ici..."
+                        placeholder="Tapez votre message..."
                         rows="1"
                         maxlength="5000"
+                        class="message-textarea"
                     ></textarea>
-                    <button class="btn-send" id="send-btn" onclick="sendMessage()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <button class="btn-send modern-btn-send" id="send-btn" onclick="sendMessage()">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                         </svg>
                     </button>
                 </div>
-                <div class="input-hint">
-                    Utilisez <kbd>Shift</kbd> + <kbd>Enter</kbd> pour un saut de ligne, <kbd>Enter</kbd> pour envoyer
+                <div class="input-hint modern-hint">
+                    <kbd>Shift</kbd> + <kbd>Enter</kbd> nouvelle ligne • <kbd>Enter</kbd> envoyer
                 </div>
             </div>
         </div>
@@ -260,8 +330,10 @@
             document.getElementById('chat-container').style.display = 'none';
             updateConnectionStatus(false);
             messagesContainer.innerHTML = `
-                <div class="welcome-message">
-                    <div class="welcome-icon">🎉</div>
+                <div class="welcome-message modern-welcome">
+                    <div class="welcome-icon-wrapper">
+                        <div class="welcome-icon">🎉</div>
+                    </div>
                     <h3>Connecté avec succès!</h3>
                     <p>Vous pouvez maintenant échanger des messages avec le serveur.</p>
                 </div>
@@ -272,15 +344,24 @@
         function updateConnectionStatus(connected) {
             const statusElement = document.getElementById('connection-status');
             const statusDot = statusElement.querySelector('.status-dot');
-            const statusText = statusElement.querySelector('span:last-child');
+            const statusPulse = statusElement.querySelector('.status-pulse');
+            const statusText = statusElement.querySelector('.status-text');
 
             if (connected) {
                 statusDot.classList.remove('disconnected');
                 statusDot.classList.add('connected');
+                if (statusPulse) {
+                    statusPulse.classList.remove('disconnected');
+                    statusPulse.classList.add('connected');
+                }
                 statusText.textContent = 'Connecté';
             } else {
                 statusDot.classList.remove('connected');
                 statusDot.classList.add('disconnected');
+                if (statusPulse) {
+                    statusPulse.classList.remove('connected');
+                    statusPulse.classList.add('disconnected');
+                }
                 statusText.textContent = 'Déconnecté';
             }
         }
@@ -315,37 +396,44 @@
 
         // Ajouter un message
         function addMessage(sender, message, type, messageId = null) {
-            const welcomeMsg = messagesContainer.querySelector('.welcome-message');
+            const welcomeMsg = messagesContainer.querySelector('.welcome-message, .modern-welcome');
             if (welcomeMsg) welcomeMsg.remove();
 
             const now = new Date();
             const timeString = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
-            const dateString = now.toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit', year: 'numeric'});
-            const fullTimestamp = `${dateString} ${timeString}`;
 
             const messageElement = document.createElement('div');
-            messageElement.className = `message ${type}`;
+            messageElement.className = `message modern-message ${type}`;
             if (messageId) {
                 messageElement.dataset.messageId = messageId;
             }
             
+            // Générer une couleur d'avatar basée sur le nom
+            const avatarColor = getAvatarColor(sender);
+            const avatarInitial = sender.charAt(0).toUpperCase();
+            
             // Statut de lecture pour les messages envoyés
-            const readStatus = type === 'sent' ? '<span class="read-status" data-status="sent">✓</span>' : '';
+            const readStatus = type === 'sent' ? '<span class="read-status modern-read-status" data-status="sent">✓</span>' : '';
             
             messageElement.innerHTML = `
-                <div class="message-avatar">${sender.charAt(0)}</div>
-                <div class="message-content">
-                    <div class="message-header">
-                        <span class="message-sender">${sender}</span>
-                        <span class="message-time">${fullTimestamp}</span>
+                <div class="message-avatar modern-avatar" style="background: ${avatarColor};">
+                    ${avatarInitial}
+                </div>
+                <div class="message-bubble modern-bubble ${type}">
+                    <div class="message-header modern-msg-header">
+                        <span class="message-sender modern-sender">${sender}</span>
+                        <span class="message-time modern-time">${timeString}</span>
                     </div>
-                    <div class="message-text">${formatMessage(escapeHtml(message))}</div>
+                    <div class="message-text modern-msg-text">${formatMessage(escapeHtml(message))}</div>
                     ${readStatus}
                 </div>
             `;
             messageElement.classList.add('message-enter');
             messagesContainer.appendChild(messageElement);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Animation d'entrée
+            setTimeout(() => messageElement.classList.add('message-visible'), 10);
             
             // Notification sonore pour les messages reçus
             if (type === 'received') {
@@ -354,13 +442,32 @@
             
             return messageElement;
         }
+        
+        // Générer une couleur d'avatar unique basée sur le nom
+        function getAvatarColor(name) {
+            const colors = [
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+                'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+            ];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
 
         // Ajouter un message système
         function addSystemMessage(message) {
             const messageElement = document.createElement('div');
-            messageElement.className = 'message system';
+            messageElement.className = 'message system modern-system-msg';
             messageElement.innerHTML = `
-                <div class="system-message">
+                <div class="system-message modern-system">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                         <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm1 12H7V7h2v5zm0-6H7V4h2v2z"/>
                     </svg>
@@ -370,13 +477,16 @@
             messageElement.classList.add('message-enter');
             messagesContainer.appendChild(messageElement);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            setTimeout(() => messageElement.classList.add('message-visible'), 10);
         }
 
         // Effacer les messages
         function clearMessages() {
             messagesContainer.innerHTML = `
-                <div class="welcome-message">
-                    <div class="welcome-icon">💬</div>
+                <div class="welcome-message modern-welcome">
+                    <div class="welcome-icon-wrapper">
+                        <div class="welcome-icon">💬</div>
+                    </div>
                     <h3>Messages effacés</h3>
                     <p>La conversation continue...</p>
                 </div>
