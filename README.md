@@ -1,6 +1,6 @@
-# LocalNetMessage - Système de Communication Réseau Local
+# LocalNetMessage
 
-Un système de communication serveur-client moderne avec interface graphique web pour les réseaux locaux.
+Application de messagerie locale serveur ↔ client avec interfaces web modernes (UI/UX), temps réel via Socket.IO et un serveur TCP.
 
 ## 🚀 Fonctionnalités
 
@@ -13,47 +13,52 @@ Un système de communication serveur-client moderne avec interface graphique web
 
 ## 📋 Prérequis
 
-- Python 3.7 ou supérieur
+- Python 3.9 ou supérieur
 - pip (gestionnaire de paquets Python)
+- Navigateur moderne (Chrome, Edge, Firefox)
 
 ## 📦 Installation
 
 1. Clonez le dépôt ou téléchargez les fichiers
+2. Installez les dépendances depuis `requirements.txt` :
 
-2. Installez les dépendances :
-```bash
-pip install flask flask-socketio
+```powershell
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
 ## 🎯 Utilisation
 
-### Mode Interface Graphique (Recommandé)
+### Mode Interface Web (recommandé)
 
-#### Lancer le serveur :
-```bash
-python server_web.py
-```
-- Ouvrez votre navigateur sur `http://localhost:8080`
-- Le serveur TCP écoute sur le port 5555
+#### Démarrer le serveur (Flask + Socket.IO):
 
-#### Lancer le client :
-```bash
-python client_web.py
+```powershell
+python .\server_web.py
 ```
-- Ouvrez votre navigateur sur `http://localhost:8081`
-- Entrez l'adresse IP du serveur (par défaut: 127.0.0.1)
-- Cliquez sur "Se connecter"
+
+- Interface web serveur: `http://localhost:5000`
+- Serveur TCP: `0.0.0.0:12345`
+
+#### Démarrer le client web:
+
+```powershell
+python .\client_web.py
+```
+
+- Interface web client: `http://localhost:5001`
+- Dans le formulaire du client, entrez l'IP du serveur (ex: `127.0.0.1`) puis cliquez sur Se connecter
 
 ### Mode Terminal (Scripts originaux)
 
 #### Lancer le serveur :
-```bash
-python server.py
+```powershell
+python .\server.py
 ```
 
 #### Lancer le client :
-```bash
-python client.py
+```powershell
+python .\client.py
 ```
 
 ## 🌐 Connexion sur le réseau local
@@ -67,9 +72,9 @@ Pour connecter des clients depuis d'autres ordinateurs :
 2. **Sur le client**, entrez l'adresse IP locale du serveur (ex: `192.168.1.10`)
 
 3. **Assurez-vous que le pare-feu** autorise les connexions sur les ports :
-   - Port 5555 (serveur TCP)
-   - Port 8080 (interface web serveur)
-   - Port 8081 (interface web client)
+   - Port 12345 (serveur TCP)
+   - Port 5000 (interface web serveur)
+   - Port 5001 (interface web client)
 
 ## 💬 Mots-clés de déconnexion
 
@@ -108,18 +113,36 @@ LocalNetMessage/
 
 ## 🔧 Configuration
 
-### Modifier les ports
+Les ports par défaut (vérifiés):
+- TCP: `12345`
+- Serveur web: `5000`
+- Client web: `5001`
 
-Dans `server_web.py` :
-```python
-PORT = 5555        # Port TCP
-port=8080         # Port web
+Vous pouvez ajuster ces valeurs dans `server_web.py` et `client_web.py` si besoin.
+
+Astuce: si un port est occupé, vous verrez une erreur au démarrage — changez le port et relancez.
+
+## 🧪 Tester rapidement (scénario recommandé)
+
+1. Lancez le serveur web:
+
+```powershell
+python .\server_web.py
 ```
 
-Dans `client_web.py` :
-```python
-port=8081         # Port web client
+2. Ouvrez `http://localhost:5000` et vérifiez la liste des clients (vide au début).
+
+3. Lancez le client web dans un autre terminal:
+
+```powershell
+python .\client_web.py
 ```
+
+4. Ouvrez `http://localhost:5001`, entrez `127.0.0.1` comme IP serveur, puis connectez.
+
+5. Envoyez des messages depuis le client et vérifiez qu'ils apparaissent côté serveur en temps réel.
+
+6. Testez le thème (bouton soleil/lune), les formats de texte et l'emoji picker.
 
 ## 🐛 Résolution de problèmes
 
@@ -129,7 +152,7 @@ port=8081         # Port web client
 - Vérifiez les paramètres du pare-feu
 
 ### L'interface web ne s'affiche pas
-- Assurez-vous que Flask et Flask-SocketIO sont installés
+- Assurez-vous que les dépendances sont installées via `requirements.txt`
 - Vérifiez que les ports ne sont pas déjà utilisés
 - Consultez la console pour les erreurs
 
@@ -140,7 +163,7 @@ port=8081         # Port web client
 
 ## 📝 Auteur
 
-Projet créé pour la communication sur réseau local avec Python.
+Projet réalisé pour la communication sur réseau local avec Python et une UI/UX moderne.
 
 ## 📄 Licence
 
