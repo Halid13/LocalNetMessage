@@ -102,26 +102,6 @@ LocalNetMessage/
     └── style.css          # Styles CSS modernes
 ```
 
-## 🎨 Caractéristiques de l'interface
-
-- **Design moderne** avec dégradés et animations
-- **Messages en temps réel** avec horodatage
-- **Liste des clients connectés** (côté serveur)
-- **Indicateurs de statut** visuels
-- **Auto-scroll** des messages
-- **Responsive design** adapté à tous les écrans
-
-## 🔧 Configuration
-
-Les ports par défaut (vérifiés):
-- TCP: `12345`
-- Serveur web: `5000`
-- Client web: `5001`
-
-Vous pouvez ajuster ces valeurs dans `server_web.py` et `client_web.py` si besoin.
-
-Astuce: si un port est occupé, vous verrez une erreur au démarrage — changez le port et relancez.
-
 ## 🧪 Tester rapidement (scénario recommandé)
 
 1. Lancez le serveur web:
@@ -142,29 +122,6 @@ python .\client_web.py
 
 5. Envoyez des messages depuis le client et vérifiez qu'ils apparaissent côté serveur en temps réel.
 
-6. Testez le thème (bouton soleil/lune), les formats de texte et l'emoji picker.
-
-## 🐛 Résolution de problèmes
-
-### Le client ne peut pas se connecter
-- Vérifiez que le serveur est bien démarré
-- Vérifiez l'adresse IP et le port
-- Vérifiez les paramètres du pare-feu
-
-### L'interface web ne s'affiche pas
-- Assurez-vous que les dépendances sont installées via `requirements.txt`
-- Vérifiez que les ports ne sont pas déjà utilisés
-- Consultez la console pour les erreurs
-
-### Les messages ne s'affichent pas
-- Vérifiez la connexion réseau
-- Actualisez la page web
-- Vérifiez la console du navigateur (F12)
-
 ## 📝 Auteur
 
-Projet réalisé pour la communication sur réseau local avec Python et une UI/UX moderne.
-
-## 📄 Licence
-
-Ce projet est libre d'utilisation pour des fins éducatives et personnelles.
+Projet réalisé par **Halid13**
