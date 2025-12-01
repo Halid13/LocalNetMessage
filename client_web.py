@@ -8,20 +8,18 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'localnetmessage-client-secret-key-2025'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Dictionnaire des mots-clés pour terminer la conversation
 EXIT_KEYWORDS = [
     'quit', 'exit', 'au revoir', 'aurevoir', 'à plus', 'a plus',
     'bye', 'goodbye', 'ciao', 'salut', 'tchao', 'bye bye',
     'à bientôt', 'a bientot', 'adieu', 'fin'
 ]
 
-# Variables globales pour la connexion
 client_socket = None
 connected = False
 receive_thread = None
-username = None  # Stocker le nom d'utilisateur
-server_display_name = 'Serveur'  # Nom du serveur affiché côté client
-message_counter = 0  # Compteur pour les IDs de messages
+username = None
+server_display_name = 'Serveur'
+message_counter = 0
 
 def receive_messages():
     """Thread pour recevoir les messages du serveur"""
@@ -31,29 +29,24 @@ def receive_messages():
         while connected:
             if client_socket:
                 try:
-                    # Recevoir le message du serveur
                     message = client_socket.recv(1024).decode('utf-8')
                     
                     if not message:
-                        # Serveur déconnecté
                         print("[DÉCONNEXION] Le serveur a fermé la connexion.")
                         socketio.emit('disconnected', {'reason': 'Serveur déconnecté'})
                         connected = False
                         break
                     
-                    # Intercepter le nom du serveur s'il est envoyé par le serveur TCP
                     if message.startswith("__SERVER_NAME__:"):
                         global server_display_name
                         server_display_name = message.split(":", 1)[1].strip() or 'Serveur'
                         print(f"[INFO] Nom du serveur défini: {server_display_name}")
                     else:
-                        # Envoyer le message à l'interface web en incluant le nom du serveur
                         socketio.emit('message_received', {
                             'message': message,
                             'server_username': server_display_name
                         })
                     
-                    # Vérifier si c'est un mot-clé de sortie
                     if message.lower().strip() in EXIT_KEYWORDS:
                         print("[DÉCONNEXION] Le serveur a terminé la conversation.")
                         socketio.emit('disconnected', {'reason': 'Serveur a terminé la conversation'})
@@ -61,7 +54,7 @@ def receive_messages():
                         break
                 
                 except Exception as e:
-                    if connected:  # Ne signaler l'erreur que si on est censé être connecté
+                    if connected:
                         print(f"[ERREUR] Erreur de réception: {e}")
                         socketio.emit('error', {'message': f'Erreur de réception: {str(e)}'})
                     break
@@ -76,13 +69,11 @@ def receive_messages():
             except:
                 pass
 
-# Routes Flask
 @app.route('/')
 def index():
     """Page d'accueil - Interface du client"""
     return render_template('client.html')
 
-# Événements SocketIO
 @socketio.on('connect')
 def handle_connect():
     """Client web connecté"""
@@ -92,7 +83,6 @@ def handle_connect():
 def handle_disconnect():
     """Client web déconnecté"""
     print('[WEB] Client web déconnecté')
-    # Fermer la connexion TCP si elle existe
     disconnect_from_server()
 
 @socketio.on('connect_to_server')
@@ -105,26 +95,21 @@ def handle_connect_to_server(data):
     server_port = int(data.get('server_port', 5555))
     
     try:
-        # Créer le socket TCP
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((server_ip, server_port))
         
-        # Envoyer le username au serveur comme premier message
         client_socket.send(username.encode('utf-8'))
         
         connected = True
         print(f"[CONNECTÉ] {username} connecté au serveur {server_ip}:{server_port}")
         
-        # Réinitialiser le nom du serveur affiché
         global server_display_name
         server_display_name = 'Serveur'
 
-        # Démarrer le thread de réception
         receive_thread = threading.Thread(target=receive_messages)
         receive_thread.daemon = True
         receive_thread.start()
         
-        # Confirmer la connexion à l'interface web
         emit('connected', {
             'server_ip': server_ip,
             'server_port': server_port,
@@ -150,7 +135,6 @@ def handle_send_message(data):
     
     message = data.get('message', '').strip()
     
-    # Validation du message
     if not message:
         emit('error', {'message': 'Le message ne peut pas être vide.'})
         return
@@ -164,24 +148,19 @@ def handle_send_message(data):
         return
     
     try:
-        # Générer un ID unique pour le message
         message_counter += 1
         message_id = f"client_{message_counter}_{int(time.time() * 1000)}"
         
-        # Envoyer le message au serveur TCP
         client_socket.send(message.encode('utf-8'))
         
-        # Confirmer l'envoi à l'interface web avec l'ID
         emit('message_sent', {
             'message': message,
             'message_id': message_id
         })
         
-        # Vérifier si c'est un mot-clé de sortie
         if message.lower().strip() in EXIT_KEYWORDS:
             print("[DÉCONNEXION] Déconnexion du serveur...")
             connected = False
-            # Attendre la réponse du serveur avant de fermer
             threading.Timer(1.0, disconnect_from_server).start()
     
     except Exception as e:
