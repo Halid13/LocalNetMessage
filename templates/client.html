@@ -164,6 +164,12 @@
                     </div>
                 </div>
                 <div class="chat-actions">
+                    <input type="file" id="file-input" style="display:none" />
+                    <button class="btn-icon modern-btn-icon" onclick="document.getElementById('file-input').click()" title="Envoyer un fichier">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14.59 2.59a2 2 0 012.82 0l4 4a2 2 0 010 2.82l-9.17 9.17a4 4 0 01-5.66-5.66L14 7.41a1 1 0 111.41 1.41l-6.59 6.59a2 2 0 102.83 2.83L21.17 7 17 2.83 14.59 5.24 13.17 3.83l1.42-1.24z"/>
+                        </svg>
+                    </button>
                     <button class="btn-icon modern-btn-icon" onclick="clearMessages()" title="Effacer les messages">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"/>
@@ -245,7 +251,7 @@
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
-        let socket = null;
+        let socket = io('http://localhost:5001');  // Connexion Socket.IO dès le chargement
         let isConnected = false;
         const messageInput = document.getElementById('message-input');
         const messagesContainer = document.getElementById('messages');
@@ -266,57 +272,66 @@
                 return;
             }
 
-            // Se connecter au serveur Flask local (client_web.py) qui gérera la connexion TCP
-            // Le client_web.py doit tourner localement sur le port 5001
-            socket = io('http://localhost:5001');
-
-            socket.on('connect', () => {
-                // Une fois connecté au serveur Flask, demander la connexion TCP
-                socket.emit('connect_to_server', {
-                    username: username,
-                    server_ip: serverIp,
-                    server_port: serverPort
-                });
-            });
-
-            socket.on('connected', (data) => {
-                isConnected = true;
-                document.getElementById('connection-panel').style.display = 'none';
-                document.getElementById('chat-container').style.display = 'flex';
-                document.getElementById('server-address-display').textContent = `${data.server_ip}:${data.server_port}`;
-                updateConnectionStatus(true);
-                addSystemMessage('Connecté au serveur');
-            });
-
-            socket.on('connection_error', (data) => {
-                alert(data.message);
-                isConnected = false;
-                updateConnectionStatus(false);
-            });
-
-            socket.on('disconnected', (data) => {
-                isConnected = false;
-                updateConnectionStatus(false);
-                addSystemMessage(data.reason || 'Déconnecté du serveur');
-            });
-
-            socket.on('error', (data) => {
-                addSystemMessage('Erreur: ' + data.message);
-            });
-
-            socket.on('message_received', (data) => {
-                const senderName = data.server_username || 'Serveur';
-                addMessage(senderName, data.message, 'received');
-            });
-
-            socket.on('message_sent', (data) => {
-                addMessage('Vous', data.message, 'sent', data.message_id);
-            });
-            
-            socket.on('message_read', (data) => {
-                updateReadStatus(data.message_id, 'read');
+            // Déclencher la connexion TCP via Socket.IO
+            socket.emit('connect_to_server', {
+                username: username,
+                server_ip: serverIp,
+                server_port: serverPort
             });
         }
+
+        // Événements Socket.IO (initialisés dès le chargement)
+        socket.on('connect', () => {
+            console.log('Socket.IO connecté au serveur Flask client_web.py');
+        });
+
+        socket.on('connected', (data) => {
+            isConnected = true;
+            document.getElementById('connection-panel').style.display = 'none';
+            document.getElementById('chat-container').style.display = 'flex';
+            document.getElementById('server-address-display').textContent = `${data.server_ip}:${data.server_port}`;
+            updateConnectionStatus(true);
+            addSystemMessage('Connecté au serveur');
+        });
+
+        socket.on('connection_error', (data) => {
+            alert(data.message);
+            isConnected = false;
+            updateConnectionStatus(false);
+        });
+
+        socket.on('disconnected', (data) => {
+            isConnected = false;
+            updateConnectionStatus(false);
+            addSystemMessage(data.reason || 'Déconnecté du serveur');
+        });
+
+        socket.on('error', (data) => {
+            addSystemMessage('Erreur: ' + data.message);
+        });
+
+        socket.on('message_received', (data) => {
+            const senderName = data.server_username || 'Serveur';
+            addMessage(senderName, data.message, 'received');
+        });
+
+        socket.on('message_sent', (data) => {
+            addMessage('Vous', data.message, 'sent', data.message_id);
+        });
+        
+        socket.on('file_received', (data) => {
+            const senderName = data.server_username || 'Serveur';
+            addFileMessage(senderName, data.filename, data.url, 'received');
+        });
+        
+        socket.on('file_sent', (data) => {
+            const url = `/files/client/sent/${data.filename}`;
+            addFileMessage('Vous', data.filename, url, 'sent');
+        });
+        
+        socket.on('message_read', (data) => {
+            updateReadStatus(data.message_id, 'read');
+        });
 
         // Déconnexion du serveur
         function disconnectFromServer() {
@@ -441,6 +456,38 @@
             }
             
             return messageElement;
+        }
+
+        // Ajouter un message fichier (avec lien)
+        function addFileMessage(sender, filename, url, type) {
+            const welcomeMsg = messagesContainer.querySelector('.welcome-message, .modern-welcome');
+            if (welcomeMsg) welcomeMsg.remove();
+
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+
+            const messageElement = document.createElement('div');
+            messageElement.className = `message modern-message ${type}`;
+            const avatarColor = getAvatarColor(sender);
+            const avatarInitial = sender.charAt(0).toUpperCase();
+            messageElement.innerHTML = `
+                <div class="message-avatar modern-avatar" style="background: ${avatarColor};">
+                    ${avatarInitial}
+                </div>
+                <div class="message-bubble modern-bubble ${type}">
+                    <div class="message-header modern-msg-header">
+                        <span class="message-sender modern-sender">${sender}</span>
+                        <span class="message-time modern-time">${timeString}</span>
+                    </div>
+                    <div class="message-text modern-msg-text">
+                        <a href="${url}" target="_blank" download>${filename}</a>
+                    </div>
+                </div>
+            `;
+            messageElement.classList.add('message-enter');
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            setTimeout(() => messageElement.classList.add('message-visible'), 10);
         }
         
         // Générer une couleur d'avatar unique basée sur le nom
@@ -693,6 +740,42 @@
             if (emojiPicker && !emojiPicker.contains(e.target) && !emojiButton) {
                 emojiPicker.style.display = 'none';
             }
+        });
+
+        // Gestion envoi de fichier
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            console.log('File input changed, socket:', socket, 'connected:', socket ? socket.connected : 'N/A', 'isConnected:', isConnected);
+            if (!socket || !socket.connected) {
+                showValidationError("Socket.IO non connecté au serveur Flask.");
+                e.target.value = '';
+                return;
+            }
+            if (!isConnected) {
+                showValidationError("Vous n'êtes pas connecté au serveur TCP.");
+                e.target.value = '';
+                return;
+            }
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                showValidationError('Fichier trop volumineux (max 2 Mo).');
+                e.target.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                const b64 = (reader.result || '').toString().split(',')[1] || '';
+                console.log('Client: envoi fichier', file.name, file.type, file.size);
+                console.log('Émission send_file via socket.io...');
+                socket.emit('send_file', {
+                    filename: file.name,
+                    mimetype: file.type || 'application/octet-stream',
+                    data_base64: b64
+                });
+                console.log('send_file émis.');
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
         });
     </script>
 </body>

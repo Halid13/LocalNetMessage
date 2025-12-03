@@ -1,12 +1,23 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, send_from_directory
 from flask_socketio import SocketIO, emit
 import socket
 import threading
 import time
+import os
+import base64
+from pathlib import Path
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'localnetmessage-client-secret-key-2025'
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Répertoires de stockage des fichiers côté client web
+BASE_DIR = Path(__file__).resolve().parent
+CLIENT_FILES_DIR = BASE_DIR / 'uploads' / 'client'
+CLIENT_RECEIVED_DIR = CLIENT_FILES_DIR / 'received'
+CLIENT_SENT_DIR = CLIENT_FILES_DIR / 'sent'
+for d in [CLIENT_RECEIVED_DIR, CLIENT_SENT_DIR]:
+    os.makedirs(d, exist_ok=True)
 
 EXIT_KEYWORDS = [
     'quit', 'exit', 'au revoir', 'aurevoir', 'à plus', 'a plus',
@@ -24,34 +35,59 @@ message_counter = 0
 def receive_messages():
     """Thread pour recevoir les messages du serveur"""
     global client_socket, connected
-    
+    buffer = ""
     try:
         while connected:
             if client_socket:
                 try:
-                    message = client_socket.recv(1024).decode('utf-8')
-                    
-                    if not message:
+                    chunk = client_socket.recv(1024)
+                    if not chunk:
                         print("[DÉCONNEXION] Le serveur a fermé la connexion.")
                         socketio.emit('disconnected', {'reason': 'Serveur déconnecté'})
                         connected = False
                         break
-                    
-                    if message.startswith("__SERVER_NAME__:"):
-                        global server_display_name
-                        server_display_name = message.split(":", 1)[1].strip() or 'Serveur'
-                        print(f"[INFO] Nom du serveur défini: {server_display_name}")
-                    else:
+                    try:
+                        text = chunk.decode('utf-8')
+                    except UnicodeDecodeError:
+                        continue
+                    buffer += text
+                    while '\n' in buffer:
+                        line, buffer = buffer.split('\n', 1)
+                        line = line.strip()
+                        if not line:
+                            continue
+                        if line.startswith("__SERVER_NAME__:"):
+                            global server_display_name
+                            server_display_name = line.split(":", 1)[1].strip() or 'Serveur'
+                            print(f"[INFO] Nom du serveur défini: {server_display_name}")
+                            continue
+                        if line.startswith("__FILE__|"):
+                            try:
+                                _, filename, mimetype, size_str, b64 = line.split('|', 4)
+                                data = base64.b64decode(b64.encode('utf-8'))
+                                filename = os.path.basename(filename)
+                                save_path = CLIENT_RECEIVED_DIR / filename
+                                with open(save_path, 'wb') as f:
+                                    f.write(data)
+                                socketio.emit('file_received', {
+                                    'filename': filename,
+                                    'mimetype': mimetype,
+                                    'size': len(data),
+                                    'url': f"/files/client/received/{filename}",
+                                    'server_username': server_display_name
+                                })
+                            except Exception as e:
+                                print(f"[ERREUR] Réception de fichier: {e}")
+                            continue
                         socketio.emit('message_received', {
-                            'message': message,
+                            'message': line,
                             'server_username': server_display_name
                         })
-                    
-                    if message.lower().strip() in EXIT_KEYWORDS:
-                        print("[DÉCONNEXION] Le serveur a terminé la conversation.")
-                        socketio.emit('disconnected', {'reason': 'Serveur a terminé la conversation'})
-                        connected = False
-                        break
+                        if line.lower() in EXIT_KEYWORDS:
+                            print("[DÉCONNEXION] Le serveur a terminé la conversation.")
+                            socketio.emit('disconnected', {'reason': 'Serveur a terminé la conversation'})
+                            connected = False
+                            break
                 
                 except Exception as e:
                     if connected:
@@ -97,8 +133,8 @@ def handle_connect_to_server(data):
     try:
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((server_ip, server_port))
-        
-        client_socket.send(username.encode('utf-8'))
+        # Envoyer username terminé par \n
+        client_socket.send((username + "\n").encode('utf-8'))
         
         connected = True
         print(f"[CONNECTÉ] {username} connecté au serveur {server_ip}:{server_port}")
@@ -151,7 +187,8 @@ def handle_send_message(data):
         message_counter += 1
         message_id = f"client_{message_counter}_{int(time.time() * 1000)}"
         
-        client_socket.send(message.encode('utf-8'))
+        # Envoyer message terminé par \n
+        client_socket.send((message + "\n").encode('utf-8'))
         
         emit('message_sent', {
             'message': message,
@@ -187,6 +224,48 @@ def disconnect_from_server():
         client_socket = None
     
     print("[FERMETURE] Connexion fermée.")
+
+# ====================
+# Fichiers côté Client
+# ====================
+
+@app.route('/files/client/<path:subpath>')
+def serve_client_files(subpath):
+    root = str(CLIENT_FILES_DIR)
+    return send_from_directory(root, subpath, as_attachment=True)
+
+
+@socketio.on('send_file')
+def handle_send_file(data):
+    """Réception d'un fichier depuis l'UI client et envoi au serveur TCP."""
+    global client_socket, connected
+    if not connected or not client_socket:
+        emit('error', {'message': 'Non connecté au serveur.'})
+        return
+
+    filename = os.path.basename(data.get('filename', ''))
+    mimetype = data.get('mimetype', 'application/octet-stream')
+    b64 = data.get('data_base64', '')
+
+    if not filename or not b64:
+        emit('error', {'message': 'Fichier invalide.'})
+        return
+
+    try:
+        print(f"[CLIENT] Envoi de fichier demandé: {filename} ({mimetype})")
+        raw = base64.b64decode(b64.encode('utf-8'))
+        if len(raw) > 2 * 1024 * 1024:
+            emit('error', {'message': 'Fichier trop volumineux (max 2 Mo).'})
+            return
+        save_path = CLIENT_SENT_DIR / filename
+        with open(save_path, 'wb') as f:
+            f.write(raw)
+        line = f"__FILE__|{filename}|{mimetype}|{len(raw)}|{b64}\n"
+        client_socket.send(line.encode('utf-8'))
+        emit('file_sent', {'filename': filename, 'mimetype': mimetype, 'size': len(raw)})
+    except Exception as e:
+        print(f"[ERREUR] Envoi fichier: {e}")
+        emit('error', {'message': f"Erreur envoi fichier: {str(e)}"})
 
 if __name__ == '__main__':
     print('[WEB] Serveur client web démarré sur http://localhost:5001')

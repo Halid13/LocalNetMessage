@@ -1,7 +1,10 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_socketio import SocketIO, emit
 import socket
 import threading
+import os
+import base64
+from pathlib import Path
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'localnetmessage-secret-key-2025'
@@ -20,6 +23,14 @@ EXIT_KEYWORDS = [
 
 clients = {}
 client_counter = 0
+
+# Répertoires de stockage des fichiers côté serveur web
+BASE_DIR = Path(__file__).resolve().parent
+SERVER_FILES_DIR = BASE_DIR / 'uploads' / 'server'
+SERVER_RECEIVED_DIR = SERVER_FILES_DIR / 'received'
+SERVER_SENT_DIR = SERVER_FILES_DIR / 'sent'
+for d in [SERVER_RECEIVED_DIR, SERVER_SENT_DIR]:
+    os.makedirs(d, exist_ok=True)
 
 def handle_client(client_socket, client_address, client_id):
     """Gère la communication avec un client TCP connecté"""
@@ -41,7 +52,7 @@ def handle_client(client_socket, client_address, client_id):
     print(f"[NOUVELLE CONNEXION] {username} ({address_str}) - ID: {client_id}")
 
     try:
-        client_socket.send(f"__SERVER_NAME__:{server_username}".encode('utf-8'))
+        client_socket.send(f"__SERVER_NAME__:{server_username}\n".encode('utf-8'))
     except Exception as e:
         print(f"[AVERTISSEMENT] Impossible d'envoyer le nom du serveur au client {client_id}: {e}")
     
@@ -53,31 +64,80 @@ def handle_client(client_socket, client_address, client_id):
     
     try:
         connected = True
+        buffer = ""
         while connected:
-            message = client_socket.recv(1024).decode('utf-8')
-            
-            if not message:
+            chunk = client_socket.recv(1024)
+            if not chunk:
                 break
-            
-            if message.lower().strip() in EXIT_KEYWORDS:
-                print(f"[DÉCONNEXION] {username} se déconnecte (mot-clé: '{message}').")
-                client_socket.send("Au revoir !".encode('utf-8'))
-                connected = False
-            else:
+            try:
+                text = chunk.decode('utf-8')
+            except UnicodeDecodeError:
+                continue
+            buffer += text
+            while '\n' in buffer:
+                line, buffer = buffer.split('\n', 1)
+                line = line.strip()
+                if not line:
+                    continue
+                # Réception fichier
+                if line.startswith("__FILE__|"):
+                    try:
+                        _, filename, mimetype, size_str, b64 = line.split('|', 4)
+                        data = base64.b64decode(b64.encode('utf-8'))
+                        filename = os.path.basename(filename)
+                        # Stocker par client
+                        client_dir = SERVER_RECEIVED_DIR / str(client_id)
+                        os.makedirs(client_dir, exist_ok=True)
+                        save_path = client_dir / filename
+                        with open(save_path, 'wb') as f:
+                            f.write(data)
+                        # Historique
+                        if client_id in clients:
+                            clients[client_id]['messages'].append({
+                                'type': 'received',
+                                'sender': username,
+                                'message': f"[FICHIER] {filename} ({len(data)} o)",
+                                'timestamp': __import__('datetime').datetime.now().isoformat(),
+                                'read': False
+                            })
+                        # Notifier UI
+                        socketio.emit('file_received', {
+                            'client_id': client_id,
+                            'address': address_str,
+                            'username': username,
+                            'filename': filename,
+                            'mimetype': mimetype,
+                            'size': len(data),
+                            'url': f"/files/server/received/{client_id}/{filename}"
+                        })
+                    except Exception as e:
+                        print(f"[ERREUR] Réception fichier client {client_id}: {e}")
+                    continue
+
+                # Mot-clé de sortie
+                if line.lower() in EXIT_KEYWORDS:
+                    print(f"[DÉCONNEXION] {username} se déconnecte (mot-clé: '{line}').")
+                    try:
+                        client_socket.send("Au revoir !\n".encode('utf-8'))
+                    except:
+                        pass
+                    connected = False
+                    continue
+
+                # Message texte
                 if client_id in clients:
                     clients[client_id]['messages'].append({
                         'type': 'received',
                         'sender': username,
-                        'message': message,
+                        'message': line,
                         'timestamp': __import__('datetime').datetime.now().isoformat(),
                         'read': False
                     })
-                
                 socketio.emit('message_received', {
                     'client_id': client_id,
                     'address': address_str,
                     'username': username,
-                    'message': message
+                    'message': line
                 })
     
     except Exception as e:
@@ -260,7 +320,7 @@ def handle_send_message(data):
     client_socket = clients[client_id]['socket']
     
     try:
-        client_socket.send(message.encode('utf-8'))
+        client_socket.send((message + "\n").encode('utf-8'))
         
         clients[client_id]['messages'].append({
             'type': 'sent',
@@ -281,6 +341,68 @@ def handle_send_message(data):
     except Exception as e:
         print(f"[ERREUR] Impossible d'envoyer au client {client_id}: {e}")
         emit('error', {'message': 'Erreur lors de l\'envoi du message'})
+
+# ====================
+# Fichiers côté Serveur
+# ====================
+
+@app.route('/files/server/<path:subpath>')
+def serve_server_files(subpath):
+    root = str(SERVER_FILES_DIR)
+    return send_from_directory(root, subpath, as_attachment=True)
+
+
+@socketio.on('send_file')
+def handle_send_file(data):
+    """Envoi d'un fichier à un client spécifique depuis l'UI serveur."""
+    client_id = data.get('client_id')
+    filename = os.path.basename(data.get('filename', ''))
+    mimetype = data.get('mimetype', 'application/octet-stream')
+    b64 = data.get('data_base64', '')
+
+    if client_id not in clients:
+        emit('error', {'message': 'Client non trouvé'})
+        return
+    if not filename or not b64:
+        emit('error', {'message': 'Fichier invalide.'})
+        return
+
+    try:
+        print(f"[SERVEUR] Envoi de fichier vers client {client_id}: {filename} ({mimetype})")
+        raw = base64.b64decode(b64.encode('utf-8'))
+        if len(raw) > 2 * 1024 * 1024:
+            emit('error', {'message': 'Fichier trop volumineux (max 2 Mo).'})
+            return
+
+        # Sauvegarde côté serveur (trace d'envoi)
+        client_dir = SERVER_SENT_DIR / str(client_id)
+        os.makedirs(client_dir, exist_ok=True)
+        save_path = client_dir / filename
+        with open(save_path, 'wb') as f:
+            f.write(raw)
+
+        # Envoi sur TCP sous forme de ligne base64
+        line = f"__FILE__|{filename}|{mimetype}|{len(raw)}|{b64}\n"
+        clients[client_id]['socket'].send(line.encode('utf-8'))
+
+        # Historique
+        clients[client_id]['messages'].append({
+            'type': 'sent',
+            'sender': 'Serveur',
+            'message': f"[FICHIER] {filename} ({len(raw)} o)",
+            'timestamp': __import__('datetime').datetime.now().isoformat(),
+            'read': False
+        })
+
+        emit('file_sent', {
+            'client_id': client_id,
+            'filename': filename,
+            'mimetype': mimetype,
+            'size': len(raw)
+        })
+    except Exception as e:
+        print(f"[ERREUR] Envoi fichier au client {client_id}: {e}")
+        emit('error', {'message': 'Erreur lors de l\'envoi du fichier'})
 
 if __name__ == '__main__':
     tcp_thread = threading.Thread(target=start_tcp_server)
