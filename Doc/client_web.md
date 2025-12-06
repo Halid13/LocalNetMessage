@@ -52,6 +52,71 @@ Gestion des exceptions: envoie un événement `error` côté web si problème de
 - `disconnect_from_server`: ferme le socket, remet `client_socket` à `None`, marque `connected = False`
 - Événements déclencheurs: mot-clé de sortie (client ou serveur), fermeture serveur, action utilisateur `disconnect_from_server`.
 
+## Transfert de Fichiers
+
+### Stockage Local
+Le code crée et utilise plusieurs répertoires pour stocker les fichiers:
+- `CLIENT_RECEIVED_DIR = "uploads/client/received/"`: fichiers reçus du serveur
+- `CLIENT_SENT_DIR = "uploads/client/sent/"`: copies des fichiers envoyés au serveur
+
+Ces répertoires sont créés au démarrage si non présents (`Path(...).mkdir(parents=True, exist_ok=True)`).
+
+### Envoi de Fichiers (`handle_send_file`)
+Fonction décorée `@socketio.on('send_file')` qui:
+1. Reçoit un événement du navigateur avec `filename`, `mimetype`, `base64_data`
+2. Valide: vérification de taille (max 2 Mo), validation du nom de fichier
+3. Encode le fichier en format `__FILE__|<filename>|<mimetype>|<size>|<base64_data>`
+4. Envoie sur le socket TCP via `client_socket.send()` en UTF-8
+5. Sauvegarde une copie locale dans `CLIENT_SENT_DIR/<filename>`
+6. Émet un événement Socket.IO `file_sent` au navigateur avec un lien de téléchargement local
+
+**Sérialisation TCP**: le format est `__FILE__|filename|mimetype|size|base64\n` (newline-delimited pour permettre un parsing buffurisé).
+
+### Réception de Fichiers (intégrée dans `receive_messages`)
+Le thread de réception détecte les lignes commençant par `__FILE__|`:
+1. Analyse la ligne: extraction de `filename`, `mimetype`, `size`, `base64_data`
+2. Décodage base64 → données binaires
+3. Sauvegarde en `CLIENT_RECEIVED_DIR/<filename>`
+4. Émet un événement Socket.IO `file_received` avec lien de téléchargement
+
+### Routes Flask de Téléchargement
+```python
+@app.route('/files/client/<path:filepath>')
+```
+Sert les fichiers depuis `uploads/client/{received|sent}/<filepath>` avec le bon `Content-Type` pour les navigateurs (inline pour images/PDFs, attachment pour autres).
+
+## Événements Socket.IO pour Fichiers
+| Événement (Entrant)   | Fonction                 | Rôle |
+|-----------------------|--------------------------|------|
+| `send_file`           | `handle_send_file`       | Reçoit fichier base64 du navigateur, envoie sur TCP |
+
+| Événement (Sortant)   | Déclencheur              | Payload |
+|-----------------------|--------------------------|---------|
+| `file_sent`           | Après envoi TCP + sauvegarde | `{filename, link}` |
+| `file_received`       | Thread reçoit `__FILE__` | `{filename, link}` |
+
+### Flux Typique de Transfert
+**Client envoie fichier au serveur:**
+1. Utilisateur clique 📎 dans `client.html`, sélectionne un fichier
+2. JavaScript: `FileReader.readAsDataURL(file)` → base64
+3. Émet `send_file` Socket.IO
+4. `handle_send_file`: encode, envoie sur TCP, sauvegarde localement
+5. Interface montre lien dans l'historique
+
+**Client reçoit fichier du serveur:**
+1. Serveur TCP envoie: `__FILE__|photo.jpg|image/jpeg|5120|[base64]`
+2. Thread reçeption détecte `__FILE__`, décode base64, sauvegarde
+3. Émet `file_received` Socket.IO
+4. Interface affiche le fichier téléchargeable
+
+## Limitations et Notes de Sécurité
+- **Taille max**: 2 Mo (overhead base64 ~33% ; éviter gros fichiers)
+- **Chiffrement**: fichiers transmis en clair sur TCP (pas de TLS par défaut)
+- **Noms**: dénudés de chemins (`/`, `..` stripés) pour éviter path traversal
+- **Stockage**: `uploads/` peut croître; nettoyer régulièrement si nombreux transferts
+
+
+
 ## Événements Socket.IO Exposés
 | Événement (Entrant)        | Fonction                      | Rôle |
 |---------------------------|-------------------------------|------|

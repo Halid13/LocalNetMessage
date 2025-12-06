@@ -119,6 +119,95 @@ Route `/set_server_username`:
 - Numériques incrémentaux (`client_id = client_counter`)
 - Clients simulés via UI web reçoivent un ID string `web_<n>` (note: pour la simulation rapide, le thread TCP prend le relais).
 
+## Transfert de Fichiers
+
+### Stockage Organisé par Client
+Le code crée plusieurs répertoires organisés par client pour isoler les fichiers:
+- `SERVER_RECEIVED_DIR = "uploads/server/received/"`: fichiers reçus des clients (sous-dossiers par `client_id`)
+- `SERVER_SENT_DIR = "uploads/server/sent/"`: fichiers envoyés aux clients (sous-dossiers par `client_id`)
+
+Structure: `uploads/server/received/<client_id>/<filename>` et `uploads/server/sent/<client_id>/<filename>`
+
+Ces répertoires sont créés au démarrage (`Path(...).mkdir(parents=True, exist_ok=True)`).
+
+### Réception de Fichiers depuis Clients (dans `handle_client`)
+Le thread de réception intègre la détection des lignes commençant par `__FILE__|`:
+1. Analyse la ligne: extraction de `filename`, `mimetype`, `size`, `base64_data`
+2. Décodage base64 → données binaires
+3. Validation du nom de fichier (prévention path traversal)
+4. Sauvegarde en `SERVER_RECEIVED_DIR/<client_id>/<filename>`
+5. Création d'entrée historique spéciale: `type: 'received'`, `message: '[FICHIER]'` avec métadonnées
+6. Émission d'événement Socket.IO `file_received` vers l'UI admin
+
+### Envoi de Fichiers aux Clients (`handle_send_file`)
+Fonction décorée `@socketio.on('send_file')` qui:
+1. Reçoit un événement du navigateur avec `target_client_id`, `filename`, `mimetype`, `base64_data`
+2. Valide: client existe et actif, taille ≤ 2 Mo
+3. Encode le fichier en format `__FILE__|<filename>|<mimetype>|<size>|<base64_data>`
+4. Envoie sur le socket TCP du client ciblé
+5. Sauvegarde une copie en `SERVER_SENT_DIR/<target_client_id>/<filename>`
+6. Ajoute entrée historique: `type: 'sent'`, `message: '[FICHIER]'`
+7. Émet `file_sent` vers l'UI admin avec lien de téléchargement
+
+**Sérialisation TCP**: format `__FILE__|filename|mimetype|size|base64\n` (newline-delimited pour parsing buffurisé côté client).
+
+### Routes Flask de Téléchargement
+```python
+@app.route('/files/server/<path:filepath>')
+```
+Sert les fichiers depuis `uploads/server/{received|sent}/<filepath>` avec le bon `Content-Type` (inline pour images/PDF, attachment pour autres).
+
+Exemple URL générée: `/files/server/received/3/photo.jpg` → télécharge `uploads/server/received/3/photo.jpg`
+
+### Historique Fichiers
+Lors du stockage d'un fichier reçu/envoyé, une entrée est créée dans `clients[client_id]['messages']`:
+```json
+{
+  "type": "received" | "sent",
+  "sender": "<admin>" | "<client_username>",
+  "message": "[FICHIER] <filename>",
+  "filename": "<nom_du_fichier>",
+  "mimetype": "image/jpeg",
+  "size": 5120,
+  "timestamp": "ISO-8601"
+}
+```
+Permet de reconstituer la chronologie des transferts de fichiers par client.
+
+## Événements Socket.IO pour Fichiers
+| Événement (Entrant)   | Fonction                 | Rôle |
+|-----------------------|--------------------------|------|
+| `send_file`           | `handle_send_file`       | Reçoit fichier base64 du navigateur admin, envoie au client TCP |
+
+| Événement (Sortant)   | Déclencheur              | Payload |
+|-----------------------|--------------------------|---------|
+| `file_sent`           | Après envoi TCP + sauvegarde | `{filename, link}` |
+| `file_received`       | Thread reçoit `__FILE__` | `{filename, client_id, link}` |
+
+### Flux Typique de Transfert
+**Admin envoie fichier à client:**
+1. Administrateur clique 📎 dans `server.html`, sélectionne un client et un fichier
+2. JavaScript: `FileReader.readAsDataURL(file)` → base64
+3. Émet `send_file` Socket.IO avec `target_client_id`
+4. `handle_send_file`: encode, envoie sur TCP au client, sauvegarde localement
+5. Interface affiche lien de téléchargement dans historique du client
+
+**Admin reçoit fichier d'un client:**
+1. Client TCP envoie: `__FILE__|document.pdf|application/pdf|45600|[base64]`
+2. Thread `handle_client` détecte `__FILE__`, décode base64, sauvegarde dans `SERVER_RECEIVED_DIR/<client_id>/`
+3. Ajoute entrée historique spéciale pour ce client
+4. Émet `file_received` Socket.IO
+5. Interface affiche le fichier téléchargeable dans l'historique du client
+
+### Limitations et Notes de Sécurité
+- **Taille max**: 2 Mo (overhead base64 ~33%)
+- **Chiffrement**: fichiers transmis en clair sur TCP (pas de TLS par défaut)
+- **Noms**: dénudés de chemins (`/`, `..` stripés) pour prévention path traversal
+- **Stockage**: `uploads/server/` peut croître ; nettoyer régulièrement ou archiver ancien historique
+- **Multi-client**: chaque client a ses propres dossiers `received/` et `sent/` pour isolation
+
+
+
 ## Points d'Amélioration Potentiels
 - Abstraction: encapsuler la gestion client dans une classe `ClientManager`
 - Sécurité: authentification / filtrage IP

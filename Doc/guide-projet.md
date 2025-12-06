@@ -35,11 +35,11 @@ LocalNetMessage est une messagerie locale simple permettant à un serveur d’ad
 
 ## 4. Événements Socket.IO (UI ↔ Python)
 - Côté serveur (`server_web.py`):
-  - Entrants: `get_client_messages`, `mark_messages_read`, `send_message`, `connect_to_server` (simulation depuis UI), `connect`/`disconnect`.
-  - Sortants: `clients_update`, `client_connected`, `client_disconnected`, `message_received`, `message_sent`, `client_messages`, `messages_marked_read`, `connection_error`, `error`.
+  - Entrants: `get_client_messages`, `mark_messages_read`, `send_message`, `send_file`, `connect_to_server` (simulation depuis UI), `connect`/`disconnect`.
+  - Sortants: `clients_update`, `client_connected`, `client_disconnected`, `message_received`, `message_sent`, `file_received`, `file_sent`, `client_messages`, `messages_marked_read`, `connection_error`, `error`.
 - Côté client (`client_web.py`):
-  - Entrants: `connect_to_server`, `send_message`, `disconnect_from_server`, `connect`/`disconnect`.
-  - Sortants: `connected`, `message_received`, `message_sent`, `disconnected`, `connection_error`, `error`.
+  - Entrants: `connect_to_server`, `send_message`, `send_file`, `disconnect_from_server`, `connect`/`disconnect`.
+  - Sortants: `connected`, `message_received`, `message_sent`, `file_received`, `file_sent`, `disconnected`, `connection_error`, `error`.
 
 ## 5. Format des Données et Historique
 - Messages stockés côté serveur dans `clients[client_id]['messages']`:
@@ -61,7 +61,8 @@ LocalNetMessage est une messagerie locale simple permettant à un serveur d’ad
 - Envoi ciblé serveur → client.
 - Réception en temps réel client → serveur (affiché côté admin).
 - Nom du serveur personnalisable via `/set_server_username`.
-- Mots-clés d’arrêt (ex: `quit`, `exit`, `au revoir`) pour mettre fin proprement à une session.
+- Mots-clés d'arrêt (ex: `quit`, `exit`, `au revoir`) pour mettre fin proprement à une session.
+- **Transfert de fichiers**: envoi/réception de fichiers (max 2 Mo) en base64, avec téléchargement direct depuis l'interface.
 
 ## 7. Lancement et Utilisation
 ### 7.1 Prérequis
@@ -81,8 +82,9 @@ python client_web.py
 - Saisir IP/port du serveur TCP: utiliser `127.0.0.1:12345` en local.
 
 ### 7.3 Test local rapide
-- Dans l’UI client: renseigner un pseudo et se connecter sur `127.0.0.1:12345`.
-- Dans l’UI serveur: sélectionner le client, envoyer/recevoir des messages.
+- Dans l'UI client: renseigner un pseudo et se connecter sur `127.0.0.1:12345`.
+- Dans l'UI serveur: sélectionner le client, envoyer/recevoir des messages.
+- Pour tester le transfert de fichiers: cliquer sur l'icône trombone (📎) côté client ou serveur, sélectionner un fichier (ex: `samples/bonjour.txt`). Un lien téléchargeable apparaîtra dans la conversation.
 - Utiliser un mot-clé de sortie pour fermer proprement.
 
 ## 8. Gestion des Erreurs et Déconnexions
@@ -95,6 +97,8 @@ python client_web.py
 - Aucune authentification intégrée.
 - Historique en mémoire (perdu au redémarrage).
 - Pas de quotas/rate limiting.
+- Fichiers limités à 2 Mo par transfert (encodage base64, overhead ~33%).
+- Pas de chiffrement des fichiers (transmission en clair sur TCP).
 
 ## 10. Configuration et Personnalisation
 - Nom du serveur: `POST /set_server_username` avec `{ "username": "MonServeur" }`.
@@ -106,17 +110,30 @@ python client_web.py
 - `client_web.py`: UI client Flask-SocketIO (port 5001) + pont vers TCP.
 - `templates/`: `server.html`, `client.html` pour les interfaces.
 - `static/`: CSS modernes et assets.
+- `uploads/`: dossier créé automatiquement pour stocker les fichiers transférés.
+  - `uploads/client/received/` et `sent/`: fichiers côté client.
+  - `uploads/server/received/<client_id>/` et `sent/<client_id>/`: fichiers côté serveur (organisés par ID client).
 - `README.md`: guide rapide.
 - `Doc/`: documents explicatifs (ce guide, etc.).
 - `documentation/`: autres docs techniques (si présent dans le repo).
+- `samples/`: fichiers d'exemple pour tester le transfert (`bonjour.txt`, `data.csv`).
 
-## 12. Pistes d’Amélioration (Résumé)
+## 12. Transfert de Fichiers (Détails)
+- **Protocole**: fichiers encodés en base64 envoyés sur TCP avec format `__FILE__|filename|mimetype|size|base64\n`.
+- **Stockage local**: chaque transfert est sauvegardé dans `uploads/{client|server}/{received|sent}/[client_id]/`.
+- **Liens téléchargement**: accessibles via routes Flask `/files/client/...` et `/files/server/...`.
+- **Historique**: les transferts de fichiers sont enregistrés comme des messages spéciaux `[FICHIER]` dans l'historique client.
+- **Utilisation côté UI**: bouton trombone (📎) dans la barre des actions de chaque conversation pour envoyer un fichier.
+
+## 13. Pistes d'Amélioration (Résumé)
 - Persistance SQLite/PostgreSQL des messages.
 - Authentification et autorisations.
-- HTTPS/TLS (ou proxy Nginx en frontal).
+- HTTPS/TLS (ou proxy Nginx en frontal) + chiffrement des fichiers.
 - Observabilité (métriques, logs structurés).
-- Gestion fichiers (upload) et recherche.
+- Protocole binaire pour fichiers (éviter base64, chunking pour gros fichiers).
+- Barre de progression et aperçus (images, PDF).
 - Reconnexion automatique côté client.
+- Augmentation limite fichier (actuellement 2 Mo).
 
 ---
-Ce guide couvre l’architecture, les flux, la configuration et l’usage courant de LocalNetMessage. Pour des détails par fichier, voir `Doc/server_web.md` et `Doc/client_web.md` (ou leurs équivalents dans `documentation/`).
+Ce guide couvre l'architecture, les flux, la configuration, l'usage courant et le transfert de fichiers de LocalNetMessage. Pour des détails par fichier, voir `Doc/server_web.md` et `Doc/client_web.md` (ou leurs équivalents dans `documentation/`).
