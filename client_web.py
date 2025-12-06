@@ -11,7 +11,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'localnetmessage-client-secret-key-2025'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Répertoires de stockage des fichiers côté client web
 BASE_DIR = Path(__file__).resolve().parent
 CLIENT_FILES_DIR = BASE_DIR / 'uploads' / 'client'
 CLIENT_RECEIVED_DIR = CLIENT_FILES_DIR / 'received'
@@ -133,7 +132,6 @@ def handle_connect_to_server(data):
     try:
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((server_ip, server_port))
-        # Envoyer username terminé par \n
         client_socket.send((username + "\n").encode('utf-8'))
         
         connected = True
@@ -187,7 +185,6 @@ def handle_send_message(data):
         message_counter += 1
         message_id = f"client_{message_counter}_{int(time.time() * 1000)}"
         
-        # Envoyer message terminé par \n
         client_socket.send((message + "\n").encode('utf-8'))
         
         emit('message_sent', {
@@ -225,9 +222,6 @@ def disconnect_from_server():
     
     print("[FERMETURE] Connexion fermée.")
 
-# ====================
-# Fichiers côté Client
-# ====================
 
 @app.route('/files/client/<path:subpath>')
 def serve_client_files(subpath):

@@ -24,7 +24,6 @@ EXIT_KEYWORDS = [
 clients = {}
 client_counter = 0
 
-# Répertoires de stockage des fichiers côté serveur web
 BASE_DIR = Path(__file__).resolve().parent
 SERVER_FILES_DIR = BASE_DIR / 'uploads' / 'server'
 SERVER_RECEIVED_DIR = SERVER_FILES_DIR / 'received'
@@ -79,19 +78,16 @@ def handle_client(client_socket, client_address, client_id):
                 line = line.strip()
                 if not line:
                     continue
-                # Réception fichier
                 if line.startswith("__FILE__|"):
                     try:
                         _, filename, mimetype, size_str, b64 = line.split('|', 4)
                         data = base64.b64decode(b64.encode('utf-8'))
                         filename = os.path.basename(filename)
-                        # Stocker par client
                         client_dir = SERVER_RECEIVED_DIR / str(client_id)
                         os.makedirs(client_dir, exist_ok=True)
                         save_path = client_dir / filename
                         with open(save_path, 'wb') as f:
                             f.write(data)
-                        # Historique
                         if client_id in clients:
                             clients[client_id]['messages'].append({
                                 'type': 'received',
@@ -100,7 +96,6 @@ def handle_client(client_socket, client_address, client_id):
                                 'timestamp': __import__('datetime').datetime.now().isoformat(),
                                 'read': False
                             })
-                        # Notifier UI
                         socketio.emit('file_received', {
                             'client_id': client_id,
                             'address': address_str,
@@ -114,7 +109,6 @@ def handle_client(client_socket, client_address, client_id):
                         print(f"[ERREUR] Réception fichier client {client_id}: {e}")
                     continue
 
-                # Mot-clé de sortie
                 if line.lower() in EXIT_KEYWORDS:
                     print(f"[DÉCONNEXION] {username} se déconnecte (mot-clé: '{line}').")
                     try:
@@ -124,7 +118,6 @@ def handle_client(client_socket, client_address, client_id):
                     connected = False
                     continue
 
-                # Message texte
                 if client_id in clients:
                     clients[client_id]['messages'].append({
                         'type': 'received',
@@ -342,9 +335,6 @@ def handle_send_message(data):
         print(f"[ERREUR] Impossible d'envoyer au client {client_id}: {e}")
         emit('error', {'message': 'Erreur lors de l\'envoi du message'})
 
-# ====================
-# Fichiers côté Serveur
-# ====================
 
 @app.route('/files/server/<path:subpath>')
 def serve_server_files(subpath):
@@ -374,18 +364,15 @@ def handle_send_file(data):
             emit('error', {'message': 'Fichier trop volumineux (max 2 Mo).'})
             return
 
-        # Sauvegarde côté serveur (trace d'envoi)
         client_dir = SERVER_SENT_DIR / str(client_id)
         os.makedirs(client_dir, exist_ok=True)
         save_path = client_dir / filename
         with open(save_path, 'wb') as f:
             f.write(raw)
 
-        # Envoi sur TCP sous forme de ligne base64
         line = f"__FILE__|{filename}|{mimetype}|{len(raw)}|{b64}\n"
         clients[client_id]['socket'].send(line.encode('utf-8'))
 
-        # Historique
         clients[client_id]['messages'].append({
             'type': 'sent',
             'sender': 'Serveur',
