@@ -5,6 +5,8 @@ import threading
 import os
 import base64
 from pathlib import Path
+from database import Database
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'localnetmessage-secret-key-2025'
@@ -31,6 +33,9 @@ SERVER_SENT_DIR = SERVER_FILES_DIR / 'sent'
 for d in [SERVER_RECEIVED_DIR, SERVER_SENT_DIR]:
     os.makedirs(d, exist_ok=True)
 
+# Initialiser la base de données SQLite
+db = Database(str(BASE_DIR / 'messages.db'))
+
 def handle_client(client_socket, client_address, client_id):
     """Gère la communication avec un client TCP connecté"""
     global clients
@@ -49,6 +54,9 @@ def handle_client(client_socket, client_address, client_id):
     clients[client_id]['messages'] = []
     
     print(f"[NOUVELLE CONNEXION] {username} ({address_str}) - ID: {client_id}")
+    
+    # Mettre à jour l'historique du client dans SQLite
+    db.update_client_history(client_id, username, address_str)
 
     try:
         client_socket.send(f"__SERVER_NAME__:{server_username}\n".encode('utf-8'))
@@ -88,14 +96,31 @@ def handle_client(client_socket, client_address, client_id):
                         save_path = client_dir / filename
                         with open(save_path, 'wb') as f:
                             f.write(data)
+                        
+                        timestamp = datetime.now().isoformat()
+                        
                         if client_id in clients:
                             clients[client_id]['messages'].append({
                                 'type': 'received',
                                 'sender': username,
                                 'message': f"[FICHIER] {filename} ({len(data)} o)",
-                                'timestamp': __import__('datetime').datetime.now().isoformat(),
+                                'timestamp': timestamp,
                                 'read': False
                             })
+                        
+                        # Sauvegarder dans SQLite
+                        db.save_file(
+                            client_id,
+                            filename,
+                            mimetype,
+                            len(data),
+                            'received',
+                            username,
+                            str(save_path),
+                            timestamp
+                        )
+                        db.increment_file_count(client_id)
+                        
                         socketio.emit('file_received', {
                             'client_id': client_id,
                             'address': address_str,
@@ -119,13 +144,18 @@ def handle_client(client_socket, client_address, client_id):
                     continue
 
                 if client_id in clients:
+                    timestamp = datetime.now().isoformat()
                     clients[client_id]['messages'].append({
                         'type': 'received',
                         'sender': username,
                         'message': line,
-                        'timestamp': __import__('datetime').datetime.now().isoformat(),
+                        'timestamp': timestamp,
                         'read': False
                     })
+                    # Sauvegarder dans SQLite
+                    db.save_message(client_id, 'received', username, line, timestamp)
+                    db.increment_message_count(client_id)
+                
                 socketio.emit('message_received', {
                     'client_id': client_id,
                     'address': address_str,
@@ -235,16 +265,17 @@ def handle_get_client_messages(data):
     """Récupérer l'historique des messages d'un client"""
     client_id = data.get('client_id')
     
+    # Chercher d'abord en mémoire (client actif)
     if client_id in clients:
-        emit('client_messages', {
-            'client_id': client_id,
-            'messages': clients[client_id]['messages']
-        })
+        messages = clients[client_id]['messages']
     else:
-        emit('client_messages', {
-            'client_id': client_id,
-            'messages': []
-        })
+        # Chercher dans SQLite (client déconnecté)
+        messages = db.get_messages(client_id)
+    
+    emit('client_messages', {
+        'client_id': client_id,
+        'messages': messages
+    })
 
 @socketio.on('mark_messages_read')
 def handle_mark_messages_read(data):
@@ -315,13 +346,18 @@ def handle_send_message(data):
     try:
         client_socket.send((message + "\n").encode('utf-8'))
         
+        timestamp = datetime.now().isoformat()
         clients[client_id]['messages'].append({
             'type': 'sent',
             'sender': 'Serveur',
             'message': message,
-            'timestamp': __import__('datetime').datetime.now().isoformat(),
+            'timestamp': timestamp,
             'read': False
         })
+        
+        # Sauvegarder dans SQLite
+        db.save_message(client_id, 'sent', 'Serveur', message, timestamp)
+        db.increment_message_count(client_id)
         
         emit('message_sent', {
             'client_id': client_id,
@@ -373,13 +409,27 @@ def handle_send_file(data):
         line = f"__FILE__|{filename}|{mimetype}|{len(raw)}|{b64}\n"
         clients[client_id]['socket'].send(line.encode('utf-8'))
 
+        timestamp = datetime.now().isoformat()
         clients[client_id]['messages'].append({
             'type': 'sent',
             'sender': 'Serveur',
             'message': f"[FICHIER] {filename} ({len(raw)} o)",
-            'timestamp': __import__('datetime').datetime.now().isoformat(),
+            'timestamp': timestamp,
             'read': False
         })
+        
+        # Sauvegarder dans SQLite
+        db.save_file(
+            client_id,
+            filename,
+            mimetype,
+            len(raw),
+            'sent',
+            'Serveur',
+            str(save_path),
+            timestamp
+        )
+        db.increment_file_count(client_id)
 
         emit('file_sent', {
             'client_id': client_id,

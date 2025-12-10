@@ -6,6 +6,8 @@ import time
 import os
 import base64
 from pathlib import Path
+from database import Database
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'localnetmessage-client-secret-key-2025'
@@ -17,6 +19,10 @@ CLIENT_RECEIVED_DIR = CLIENT_FILES_DIR / 'received'
 CLIENT_SENT_DIR = CLIENT_FILES_DIR / 'sent'
 for d in [CLIENT_RECEIVED_DIR, CLIENT_SENT_DIR]:
     os.makedirs(d, exist_ok=True)
+
+# Initialiser la base de données SQLite (client)
+# Utilise un fichier DB séparé pour le client
+db = Database(str(BASE_DIR / 'client_messages.db'))
 
 EXIT_KEYWORDS = [
     'quit', 'exit', 'au revoir', 'aurevoir', 'à plus', 'a plus',
@@ -68,6 +74,21 @@ def receive_messages():
                                 save_path = CLIENT_RECEIVED_DIR / filename
                                 with open(save_path, 'wb') as f:
                                     f.write(data)
+                                
+                                timestamp = datetime.now().isoformat()
+                                
+                                # Sauvegarder dans SQLite
+                                db.save_file(
+                                    1,  # Client ID (constant: 1 pour le client local)
+                                    filename,
+                                    mimetype,
+                                    len(data),
+                                    'received',
+                                    server_display_name,
+                                    str(save_path),
+                                    timestamp
+                                )
+                                
                                 socketio.emit('file_received', {
                                     'filename': filename,
                                     'mimetype': mimetype,
@@ -82,6 +103,11 @@ def receive_messages():
                             'message': line,
                             'server_username': server_display_name
                         })
+                        
+                        # Sauvegarder dans SQLite
+                        timestamp = datetime.now().isoformat()
+                        db.save_message(1, 'received', server_display_name, line, timestamp)
+                        
                         if line.lower() in EXIT_KEYWORDS:
                             print("[DÉCONNEXION] Le serveur a terminé la conversation.")
                             socketio.emit('disconnected', {'reason': 'Serveur a terminé la conversation'})
@@ -192,6 +218,10 @@ def handle_send_message(data):
             'message_id': message_id
         })
         
+        # Sauvegarder dans SQLite
+        timestamp = datetime.now().isoformat()
+        db.save_message(1, 'sent', username, message, timestamp)
+        
         if message.lower().strip() in EXIT_KEYWORDS:
             print("[DÉCONNEXION] Déconnexion du serveur...")
             connected = False
@@ -254,8 +284,23 @@ def handle_send_file(data):
         save_path = CLIENT_SENT_DIR / filename
         with open(save_path, 'wb') as f:
             f.write(raw)
+        
         line = f"__FILE__|{filename}|{mimetype}|{len(raw)}|{b64}\n"
         client_socket.send(line.encode('utf-8'))
+        
+        # Sauvegarder dans SQLite
+        timestamp = datetime.now().isoformat()
+        db.save_file(
+            1,  # Client ID (constant: 1)
+            filename,
+            mimetype,
+            len(raw),
+            'sent',
+            username,
+            str(save_path),
+            timestamp
+        )
+        
         emit('file_sent', {'filename': filename, 'mimetype': mimetype, 'size': len(raw)})
     except Exception as e:
         print(f"[ERREUR] Envoi fichier: {e}")

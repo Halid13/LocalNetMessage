@@ -12,6 +12,7 @@ Il sert de point central: chaque client TCP est géré dans un thread dédié, e
 - Flask-SocketIO: canal temps réel navigateur ↔ serveur
 - socket (TCP): écoute des connexions entrantes sur `PORT = 12345`
 - threading: un thread pour le serveur TCP + un thread par client
+- **SQLite** (via `database.py`): persistance messages/fichiers/clients
 
 ## Variables & Structures
 - `HOST = '0.0.0.0'`: écoute sur toutes les interfaces
@@ -21,6 +22,7 @@ Il sert de point central: chaque client TCP est géré dans un thread dédié, e
 - `clients`: dictionnaire des clients actifs
   - Structure: `{ client_id: { 'socket': socket_obj, 'address': ip:port, 'username': str, 'messages': [ { ... } ] } }`
 - `client_counter`: compteur auto-incrément pour attribuer des IDs uniques
+- `db`: instance SQLite (classe `Database` du module `database.py`) pour persistance
 
 ## Cycle de Vie d'une Connexion TCP
 1. Le serveur (`start_tcp_server`) écoute et accepte une connexion.
@@ -28,13 +30,16 @@ Il sert de point central: chaque client TCP est géré dans un thread dédié, e
 3. Insère entrée initiale dans `clients` avec username provisoire.
 4. Lance un thread `handle_client(client_socket, client_address, client_id)`.
 5. Le thread lit le premier message (username réel) → met à jour l'entrée.
-6. Envoie au client le nom du serveur: `__SERVER_NAME__:<server_username>`.
-7. Notifie l'UI Web via Socket.IO (`client_connected`).
-8. Boucle de réception: chaque message reçu est:
+6. **Enregistre le client dans SQLite** via `db.update_client_history(client_id, username, address)`.
+7. Envoie au client le nom du serveur: `__SERVER_NAME__:<server_username>`.
+8. Notifie l'UI Web via Socket.IO (`client_connected`).
+9. Boucle de réception: chaque message reçu est:
    - Vérifié contre `EXIT_KEYWORDS`.
    - Stocké dans `clients[client_id]['messages']` (type `received`).
+   - **Sauvegardé dans SQLite** via `db.save_message()`.
+   - Compteur incrément via `db.increment_message_count()`.
    - Émis à l'UI Web (`message_received`).
-9. Si mot-clé exit détecté ou socket fermé: nettoyage + émission `client_disconnected`.
+10. Si mot-clé exit détecté ou socket fermé: nettoyage + émission `client_disconnected`.
 
 ## Historique des Messages par Client
 Format d'un message stocké:
@@ -211,7 +216,7 @@ Permet de reconstituer la chronologie des transferts de fichiers par client.
 ## Points d'Amélioration Potentiels
 - Abstraction: encapsuler la gestion client dans une classe `ClientManager`
 - Sécurité: authentification / filtrage IP
-- Persistance: stocker l'historique (SQLite, Postgres)
+- **Persistance**: actuellement SQLite (voir `DATABASE.md`), migration vers PostgreSQL pour haute charge
 - Diffusion: gestion broadcast / groupes / rooms
 - Surveillance: métriques (nb messages, latence) exposées via endpoint
 - Gestion mémoire: purge historique au-delà d'un seuil
@@ -235,5 +240,71 @@ Démarrage:
 - TCP: `0.0.0.0:12345`
 - Web: `http://127.0.0.1:5000`
 
+## Persistance SQLite
+
+### Initialisation de la Base de Données
+Au démarrage, un objet `db = Database('messages.db')` est créé, initialisant trois tables (si non présentes):
+- `messages`: tous les messages texte échangés
+- `files`: métadonnées de tous les fichiers transférés
+- `client_history`: historique des connexions clients
+
+### Sauvegarde Automatique
+Chaque interaction client est enregistrée:
+
+**Messages reçus:**
+```python
+db.save_message(
+    client_id,
+    'received',
+    username,
+    message_text,
+    datetime.now().isoformat()
+)
+db.increment_message_count(client_id)
+```
+
+**Fichiers reçus:**
+```python
+db.save_file(
+    client_id,
+    filename,
+    mimetype,
+    file_size,
+    'received',
+    username,
+    file_path,
+    datetime.now().isoformat()
+)
+db.increment_file_count(client_id)
+```
+
+**Messages envoyés:**
+```python
+db.save_message(
+    client_id,
+    'sent',
+    'Serveur',
+    message_text,
+    datetime.now().isoformat()
+)
+db.increment_message_count(client_id)
+```
+
+### Récupération de l'Historique
+Quand un administrateur consulte l'historique d'un client (événement `get_client_messages`):
+```python
+if client_id in clients:
+    messages = clients[client_id]['messages']  # En mémoire si connecté
+else:
+    messages = db.get_messages(client_id)  # Depuis SQLite si déconnecté
+```
+
+Cela permet de retrouver tout l'historique même après redémarrage du serveur ou déconnexion du client.
+
+### Autres Opérations SQLite
+- **Marquer lus**: `db.mark_messages_read(client_id)` met à jour tous les 'received' en `read = 1`
+- **Historique client**: `db.get_client_history(client_id)` → infos première connexion, dernière activité, compteurs
+- **Export JSON**: `db.export_to_json(client_id, 'client_1_export.json')` → export complet
+
 ## Résumé
-`server_web.py` orchestre simultanément un serveur TCP multi-clients et une interface temps réel d'administration. Il centralise l'état des connexions, expose un historique granularisé par client et fournit les outils nécessaires pour interagir de manière ciblée et supervisée.
+`server_web.py` orchestre simultanément un serveur TCP multi-clients et une interface temps réel d'administration, avec persistance SQLite automatique de tous les échanges. Il centralise l'état des connexions, expose un historique granularisé par client et fournit les outils nécessaires pour interagir de manière ciblée et supervisée.

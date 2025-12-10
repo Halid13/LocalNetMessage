@@ -14,6 +14,7 @@ Il agit comme un pont entre le navigateur (Socket.IO) et le serveur TCP bas nive
 - Flask-SocketIO: canal temps réel entre navigateur et application Python
 - socket (TCP): connexion bas niveau au serveur (port par défaut 5555 dans ce fichier, mais le projet normalise sur 12345 côté serveur principal)
 - threading: thread séparé pour la réception non bloquante
+- **SQLite** (via `database.py`): persistance messages et fichiers locaux
 
 ## Variables Globales Principales
 - `client_socket`: socket TCP actif vers le serveur
@@ -23,6 +24,7 @@ Il agit comme un pont entre le navigateur (Socket.IO) et le serveur TCP bas nive
 - `server_display_name`: nom d'affichage du serveur (peut être mis à jour dynamiquement via message spécial)
 - `message_counter`: compteur pour générer des IDs uniques localement
 - `EXIT_KEYWORDS`: liste de chaînes déclenchant la fin de conversation
+- `db`: instance SQLite (classe `Database` du module `database.py`) pour persistance locale
 
 ## Flux de Connexion
 1. Le navigateur émet l'événement Socket.IO `connect_to_server` avec `username`, `server_ip`, `server_port`.
@@ -46,7 +48,8 @@ Gestion des exceptions: envoie un événement `error` côté web si problème de
 2. Génération d'un ID unique: `client_<compteur>_<timestamp_ms>`
 3. Envoi sur le socket TCP (`client_socket.send`) en UTF-8
 4. Émission de `message_sent` vers le navigateur avec l'ID pour confirmation UI
-5. Si mot-clé de sortie envoyé: planifie la fermeture (`threading.Timer`) pour permettre une éventuelle réponse serveur
+5. **Sauvegarde dans SQLite** via `db.save_message(1, 'sent', username, message, timestamp)`
+6. Si mot-clé de sortie envoyé: planifie la fermeture (`threading.Timer`) pour permettre une éventuelle réponse serveur
 
 ## Gestion Déconnexion
 - `disconnect_from_server`: ferme le socket, remet `client_socket` à `None`, marque `connected = False`
@@ -159,5 +162,62 @@ Le fichier lance Flask-SocketIO sur `http://localhost:5001` (paramétrable). Ex�
 python client_web.py
 ```
 
+## Persistance SQLite
+
+### Initialisation de la Base de Données Client
+Au démarrage, un objet `db = Database('client_messages.db')` est créé (BD distincte du serveur) avec trois tables:
+- `messages`: tous les messages reçus/envoyés au serveur
+- `files`: métadonnées des fichiers reçus/envoyés
+- `client_history`: (non utilisée côté client, mais initialisée)
+
+### Sauvegarde Automatique
+Chaque interaction client est enregistrée (client_id = 1, constant pour le client local):
+
+**Messages reçus du serveur:**
+```python
+timestamp = datetime.now().isoformat()
+db.save_message(1, 'received', server_display_name, line, timestamp)
+```
+
+**Messages envoyés au serveur:**
+```python
+timestamp = datetime.now().isoformat()
+db.save_message(1, 'sent', username, message, timestamp)
+```
+
+**Fichiers reçus du serveur:**
+```python
+db.save_file(
+    1,
+    filename,
+    mimetype,
+    file_size,
+    'received',
+    server_display_name,
+    file_path,
+    timestamp
+)
+```
+
+**Fichiers envoyés au serveur:**
+```python
+db.save_file(
+    1,
+    filename,
+    mimetype,
+    file_size,
+    'sent',
+    username,
+    file_path,
+    timestamp
+)
+```
+
+### Avantages
+- **Historique persistant**: retrouvez tous vos messages/fichiers même après redémarrage
+- **Export**: possibilité d'exporter l'historique en JSON via `db.export_to_json(1, 'export.json')`
+- **Archivage**: nettoyage auto possible via `db.delete_old_messages(days=30)`
+- **Audit**: trace complète de votre activité
+
 ## Résumé
-`client_web.py` encapsule un client TCP classique derrière une couche Web temps réel. Il orchestre la connexion, la translation des événements Socket.IO vers des opérations socket brutes et la remontée d'un flux de messages vers l'UI moderne.
+`client_web.py` encapsule un client TCP classique derrière une couche Web temps réel avec persistance SQLite automatique. Il orchestre la connexion, la translation des événements Socket.IO vers des opérations socket brutes, la sauvegarde durable de tous les échanges, et la remontée d'un flux de messages vers l'UI moderne.

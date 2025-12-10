@@ -42,7 +42,8 @@ LocalNetMessage est une messagerie locale simple permettant à un serveur d’ad
   - Sortants: `connected`, `message_received`, `message_sent`, `file_received`, `file_sent`, `disconnected`, `connection_error`, `error`.
 
 ## 5. Format des Données et Historique
-- Messages stockés côté serveur dans `clients[client_id]['messages']`:
+### 5.1 Historique en Mémoire
+- Messages stockés côté serveur dans `clients[client_id]['messages']` (pendant connexion):
 ```json
 {
   "type": "received" | "sent",
@@ -53,11 +54,28 @@ LocalNetMessage est une messagerie locale simple permettant à un serveur d’ad
 }
 ```
 - `mark_messages_read` met à jour `read = true` pour les messages `received`.
-- Le client web ne conserve pas d’historique local durable; l’UI affiche les flux en temps réel.
+- Le client web ne conserve pas d'historique local durable; l'UI affiche les flux en temps réel.
+
+### 5.2 Persistance SQLite
+À partir de cette version, les messages et fichiers sont **automatiquement sauvegardés dans SQLite**:
+- **Serveur**: fichier `messages.db` avec historique de tous les clients
+- **Client**: fichier `client_messages.db` avec messages du client local
+
+Avantages:
+- Historique conservé après redémarrage serveur/client
+- Récupération possible même après déconnexion
+- Audit complet de tous les échanges
+- Export JSON par client disponible
+
+Voir `DATABASE.md` pour schéma complet et utilisation API.
+
 
 ## 6. Fonctionnalités Clés
 - Supervision des clients (liste en temps réel, connexion/déconnexion).
 - Historique par client côté serveur, avec statut de lecture.
+- **Persistance SQLite**: messages et fichiers sauvegardés automatiquement.
+- Transfert de fichiers (base64, stockage local, liens téléchargement).
+- Interface web moderne (glassmorphism, dark mode, responsive).
 - Envoi ciblé serveur → client.
 - Réception en temps réel client → serveur (affiché côté admin).
 - Nom du serveur personnalisable via `/set_server_username`.
@@ -108,14 +126,17 @@ python client_web.py
 ## 11. Structure des Fichiers
 - `server_web.py`: serveur TCP + UI admin Flask-SocketIO (port 5000).
 - `client_web.py`: UI client Flask-SocketIO (port 5001) + pont vers TCP.
+- `database.py`: module SQLite pour persistance messages/fichiers.
 - `templates/`: `server.html`, `client.html` pour les interfaces.
 - `static/`: CSS modernes et assets.
 - `uploads/`: dossier créé automatiquement pour stocker les fichiers transférés.
   - `uploads/client/received/` et `sent/`: fichiers côté client.
   - `uploads/server/received/<client_id>/` et `sent/<client_id>/`: fichiers côté serveur (organisés par ID client).
+- `messages.db`: base de données SQLite du serveur (persistance messages/clients).
+- `client_messages.db`: base de données SQLite du client.
 - `README.md`: guide rapide.
-- `Doc/`: documents explicatifs (ce guide, etc.).
-- `documentation/`: autres docs techniques (si présent dans le repo).
+- `Doc/`: documents explicatifs (ce guide, client_web.md, server_web.md).
+- `DATABASE.md`: documentation complète schéma et usage SQLite.
 - `samples/`: fichiers d'exemple pour tester le transfert (`bonjour.txt`, `data.csv`).
 
 ## 12. Transfert de Fichiers (Détails)
@@ -126,14 +147,18 @@ python client_web.py
 - **Utilisation côté UI**: bouton trombone (📎) dans la barre des actions de chaque conversation pour envoyer un fichier.
 
 ## 13. Pistes d'Amélioration (Résumé)
-- Persistance SQLite/PostgreSQL des messages.
+- Persistance PostgreSQL/MySQL (remplacer SQLite pour haute charge).
 - Authentification et autorisations.
-- HTTPS/TLS (ou proxy Nginx en frontal) + chiffrement des fichiers.
+- HTTPS/TLS (ou proxy Nginx en frontal) + chiffrement des fichiers (SQLCipher).
 - Observabilité (métriques, logs structurés).
 - Protocole binaire pour fichiers (éviter base64, chunking pour gros fichiers).
 - Barre de progression et aperçus (images, PDF).
 - Reconnexion automatique côté client.
 - Augmentation limite fichier (actuellement 2 Mo).
+- Archivage automatique messages > 30 jours.
+- Recherche Full-Text dans l'historique.
+- Dashboard analytics (nb messages/jour, clients actifs, bande passante).
 
 ---
-Ce guide couvre l'architecture, les flux, la configuration, l'usage courant et le transfert de fichiers de LocalNetMessage. Pour des détails par fichier, voir `Doc/server_web.md` et `Doc/client_web.md` (ou leurs équivalents dans `documentation/`).
+Ce guide couvre l'architecture, les flux, la configuration, l'usage courant, le transfert de fichiers et la persistance SQLite de LocalNetMessage. 
+Pour des détails par fichier, voir `Doc/server_web.md`, `Doc/client_web.md`, ou `DATABASE.md` pour la base de données.
