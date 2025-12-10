@@ -6,6 +6,8 @@
     <title>LocalNetMessage - Serveur</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/modern-overrides.css">
+    <link rel="stylesheet" href="/static/themes.css">
+    <link rel="stylesheet" href="/static/theme-selector.css">
 </head>
 <body>
     <!-- Page d'accueil avec formulaire de username -->
@@ -102,6 +104,22 @@
                 <div class="server-badge">
                     <span class="status-dot"></span>
                     <span>Serveur: <strong id="server-username-display"></strong></span>
+                </div>
+                <div class="theme-selector-wrapper">
+                    <button class="theme-selector-btn" id="theme-menu-btn" onclick="toggleThemeMenu()" aria-label="Sélectionner un thème" title="Thèmes">
+                        🎨
+                    </button>
+                    <div class="theme-menu" id="theme-menu" style="display: none;">
+                        <div class="theme-option" onclick="setTheme('violet')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)" title="Violet"></div>
+                        <div class="theme-option" onclick="setTheme('rose')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" title="Rose"></div>
+                        <div class="theme-option" onclick="setTheme('cyan')" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" title="Cyan"></div>
+                        <div class="theme-option" onclick="setTheme('green')" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" title="Vert"></div>
+                        <div class="theme-option" onclick="setTheme('orange')" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%)" title="Orange"></div>
+                        <div class="theme-option" onclick="setTheme('turquoise')" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%)" title="Turquoise"></div>
+                        <div class="theme-option" onclick="setTheme('peach')" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)" title="Pêche"></div>
+                        <div class="theme-option" onclick="setTheme('indigo')" style="background: linear-gradient(135deg, #667eea 0%, #5568d3 100%)" title="Indigo"></div>
+                        <div class="theme-option" onclick="setTheme('coral')" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)" title="Corail"></div>
+                    </div>
                 </div>
                 <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Changer le thème"></button>
             </div>
@@ -911,7 +929,71 @@
                 // Focus automatique sur le champ
                 usernameInput.focus();
             }
+            
+            // Initialiser le thème
+            initColorTheme();
+            
+            // Charger le thème sauvegardé
+            const savedColorTheme = localStorage.getItem('colorTheme') || 'violet';
+            setTheme(savedColorTheme);
         });
+
+        // ========== GESTION DES THÈMES PERSONNALISÉS ==========
+        
+        // Définir un thème
+        function setTheme(themeName) {
+            const html = document.documentElement;
+            const allThemes = ['violet', 'rose', 'cyan', 'green', 'orange', 'turquoise', 'peach', 'indigo', 'coral'];
+            
+            // Ajouter transition
+            html.classList.add('theme-transitioning');
+            
+            // Retirer tous les thèmes
+            allThemes.forEach(theme => html.classList.remove(`theme-${theme}`));
+            
+            // Ajouter le nouveau thème
+            html.classList.add(`theme-${themeName}`);
+            
+            // Mettre à jour le sélecteur visuel
+            updateThemeSelection(themeName);
+            
+            // Sauvegarder le choix
+            localStorage.setItem('colorTheme', themeName);
+            
+            // Retirer la transition après l'animation
+            setTimeout(() => html.classList.remove('theme-transitioning'), 300);
+        }
+        
+        // Basculer le menu de sélection
+        function toggleThemeMenu() {
+            const menu = document.getElementById('theme-menu');
+            if (menu) {
+                menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
+            }
+        }
+        
+        // Fermer le menu quand on clique ailleurs
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('theme-menu');
+            const btn = document.getElementById('theme-menu-btn');
+            if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.style.display = 'none';
+            }
+        });
+        
+        // Mettre à jour la sélection visuelle
+        function updateThemeSelection(themeName) {
+            const options = document.querySelectorAll('.theme-option');
+            options.forEach(opt => opt.classList.remove('active'));
+            const activeOption = document.querySelector(`.theme-option[onclick*="'${themeName}'"]`);
+            if (activeOption) activeOption.classList.add('active');
+        }
+        
+        // Initialiser le thème
+        function initColorTheme() {
+            const savedTheme = localStorage.getItem('colorTheme') || 'violet';
+            setTheme(savedTheme);
+        }
     </script>
 </body>
 </html>

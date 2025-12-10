@@ -1,0 +1,116 @@
+/* ========================================
+   SYSTÈME DE THÈMES PERSONNALISÉS
+   ======================================== */
+
+/* Thème par défaut: Violet (défaut) */
+:root.theme-violet {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --primary-color: #667eea;
+    --primary-dark: #5568d3;
+    --secondary-color: #764ba2;
+    --accent-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --theme-name: 'Violet';
+}
+
+/* Thème Rose */
+:root.theme-rose {
+    --primary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --primary-color: #f5576c;
+    --primary-dark: #e63755;
+    --secondary-color: #f093fb;
+    --accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --theme-name: 'Rose';
+}
+
+/* Thème Bleu Cyan */
+:root.theme-cyan {
+    --primary-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --primary-color: #00f2fe;
+    --primary-dark: #00d9ff;
+    --secondary-color: #4facfe;
+    --accent-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --theme-name: 'Cyan';
+}
+
+/* Thème Vert */
+:root.theme-green {
+    --primary-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --primary-color: #38f9d7;
+    --primary-dark: #2dd4bf;
+    --secondary-color: #43e97b;
+    --accent-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --theme-name: 'Vert';
+}
+
+/* Thème Orange */
+:root.theme-orange {
+    --primary-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --primary-color: #fee140;
+    --primary-dark: #fdd835;
+    --secondary-color: #fa709a;
+    --accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --theme-name: 'Orange';
+}
+
+/* Thème Turquoise */
+:root.theme-turquoise {
+    --primary-gradient: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    --primary-color: #30cfd0;
+    --primary-dark: #1ab8b5;
+    --secondary-color: #330867;
+    --accent-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --theme-name: 'Turquoise';
+}
+
+/* Thème Pêche */
+:root.theme-peach {
+    --primary-gradient: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    --primary-color: #fed6e3;
+    --primary-dark: #ffb3d9;
+    --secondary-color: #a8edea;
+    --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --theme-name: 'Pêche';
+}
+
+/* Thème Indigo */
+:root.theme-indigo {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #5568d3 100%);
+    --primary-color: #5568d3;
+    --primary-dark: #3d39a9;
+    --secondary-color: #667eea;
+    --accent-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --theme-name: 'Indigo';
+}
+
+/* Thème Corail */
+:root.theme-coral {
+    --primary-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    --primary-color: #ff6b6b;
+    --primary-dark: #ff5252;
+    --secondary-color: #ee5a6f;
+    --accent-gradient: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+    --theme-name: 'Corail';
+}
+
+/* Mode sombre pour tous les thèmes */
+body.dark:root,
+:root.dark {
+    --bg-primary: #0f1117;
+    --bg-secondary: #1a1d29;
+    --bg-tertiary: #23263a;
+    --text-primary: #f0f4f8;
+    --text-secondary: #b4bac5;
+    --text-light: #8892a0;
+    --border-color: #2d3142;
+}
+
+/* Animation de transition de thème */
+.theme-transitioning {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Classe pour appliquer la transition à tous les éléments */
+body.theme-transitioning,
+body.theme-transitioning * {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease !important;
+}
