@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/static/modern-overrides.css">
     <link rel="stylesheet" href="/static/themes.css">
     <link rel="stylesheet" href="/static/theme-selector.css">
+    <link rel="stylesheet" href="/static/encryption-ui.css">
 </head>
 <body>
     <!-- Page d'accueil avec formulaire de username -->
@@ -358,11 +359,22 @@
                     clientConversations[data.client_id] = [];
                 }
                 
+                // Déchiffrer le message si c'est un message chiffré
+                let messageContent = data.message;
+                if (encryption && data.message.startsWith('[ENCRYPTED]')) {
+                    try {
+                        messageContent = encryption.decrypt(data.message);
+                    } catch (e) {
+                        console.warn('Impossible de déchiffrer le message:', e);
+                        messageContent = '[Message chiffré - clé introuvable]';
+                    }
+                }
+                
                 // Ajouter le message à la conversation du client
                 clientConversations[data.client_id].push({
                     type: 'received',
                     sender: data.username,
-                    message: data.message,
+                    message: messageContent,
                     read: false,
                     timestamp: new Date().toLocaleString('fr-FR', {
                         day: '2-digit',
@@ -375,7 +387,7 @@
                 
                 // Si ce client est sélectionné, afficher le message et marquer comme lu
                 if (selectedClient === data.client_id) {
-                    addMessageToDisplay(data.username, data.message, 'received');
+                    addMessageToDisplay(data.username, messageContent, 'received');
                     markClientMessagesAsRead(data.client_id);
                 } else {
                     // Si un autre client est sélectionné, afficher une notification
@@ -396,10 +408,21 @@
                     clientConversations[data.client_id] = [];
                 }
             
+                // Déchiffrer le message si c'est un message chiffré (pour l'affichage)
+                let messageToStore = data.message;
+                if (encryption && data.message.startsWith('[ENCRYPTED]')) {
+                    try {
+                        messageToStore = encryption.decrypt(data.message);
+                    } catch (e) {
+                        console.warn('Message chiffré non déchiffrable');
+                        messageToStore = '[Message chiffré - affichage original]';
+                    }
+                }
+            
                 clientConversations[data.client_id].push({
                     type: 'sent',
                     sender: 'Vous',
-                    message: data.message,
+                    message: messageToStore,
                     read: false,
                     timestamp: new Date().toLocaleString('fr-FR', {
                         day: '2-digit',
@@ -412,7 +435,7 @@
                 
                 // Si ce client est sélectionné, afficher le message
                 if (selectedClient === data.client_id) {
-                    addMessageToDisplay('Vous', data.message, 'sent');
+                    addMessageToDisplay('Vous', messageToStore, 'sent');
                 }
             });
 
@@ -740,9 +763,15 @@
                 return;
             }
             
+            // Chiffrer le message si le chiffrement est activé
+            let messageToSend = message;
+            if (encryption && encryption.isEnabled()) {
+                messageToSend = encryption.encrypt(message);
+            }
+            
             socket.emit('send_message', {
                 client_id: selectedClient,
-                message: message
+                message: messageToSend
             });
             messageInput.value = '';
             autoResize();
@@ -995,5 +1024,9 @@
             setTheme(savedTheme);
         }
     </script>
+    
+    <!-- Scripts de chiffrement -->
+    <script src="/static/encryption.js"></script>
+    <script src="/static/encryption-ui.js"></script>
 </body>
 </html>

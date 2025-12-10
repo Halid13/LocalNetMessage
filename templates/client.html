@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/static/client-modern.css?v=2.1">
     <link rel="stylesheet" href="/static/themes.css?v=1.0">
     <link rel="stylesheet" href="/static/theme-selector.css?v=1.0">
+    <link rel="stylesheet" href="/static/encryption-ui.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -330,11 +331,34 @@
 
         socket.on('message_received', (data) => {
             const senderName = data.server_username || 'Serveur';
-            addMessage(senderName, data.message, 'received');
+            
+            // Déchiffrer le message si c'est un message chiffré
+            let messageContent = data.message;
+            if (encryption && data.message.startsWith('[ENCRYPTED]')) {
+                try {
+                    messageContent = encryption.decrypt(data.message);
+                } catch (e) {
+                    console.warn('Impossible de déchiffrer le message:', e);
+                    messageContent = '[Message chiffré - clé introuvable]';
+                }
+            }
+            
+            addMessage(senderName, messageContent, 'received');
         });
 
         socket.on('message_sent', (data) => {
-            addMessage('Vous', data.message, 'sent', data.message_id);
+            // Déchiffrer le message si c'est un message chiffré (pour l'affichage)
+            let messageContent = data.message;
+            if (encryption && data.message.startsWith('[ENCRYPTED]')) {
+                try {
+                    messageContent = encryption.decrypt(data.message);
+                } catch (e) {
+                    console.warn('Message chiffré non déchiffrable');
+                    messageContent = '[Message chiffré - affichage original]';
+                }
+            }
+            
+            addMessage('Vous', messageContent, 'sent', data.message_id);
         });
         
         socket.on('file_received', (data) => {
@@ -419,8 +443,14 @@
                 return;
             }
             
+            // Chiffrer le message si le chiffrement est activé
+            let messageToSend = message;
+            if (encryption && encryption.isEnabled()) {
+                messageToSend = encryption.encrypt(message);
+            }
+            
             socket.emit('send_message', {
-                message: message
+                message: messageToSend
             });
             messageInput.value = '';
             updateCharCount();
@@ -858,5 +888,9 @@
             initColorTheme();
         });
     </script>
+    
+    <!-- Scripts de chiffrement -->
+    <script src="/static/encryption.js"></script>
+    <script src="/static/encryption-ui.js"></script>
 </body>
 </html>
