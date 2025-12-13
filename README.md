@@ -8,6 +8,7 @@ Application de messagerie locale serveur ↔ client avec interfaces web modernes
 - **Interface graphique moderne** avec design UI/UX avancé
 - **Support multi-clients** avec gestion de plusieurs connexions simultanées
 - **Messages en temps réel** via WebSocket et TCP
+- **Chiffrement symétrique léger** (XOR + Base64) côté navigateur avec partage de clé
 - **Déconnexion intelligente** avec mots-clés personnalisés
 - **Design responsive** pour tous les appareils
 
@@ -48,6 +49,12 @@ python .\client_web.py
 
 - Interface web client: `http://localhost:5001`
 - Dans le formulaire du client, entrez l'IP du serveur (ex: `127.0.0.1`) puis cliquez sur Se connecter
+
+### Chiffrement des messages (UI Web)
+1. Ouvrir le panneau 🔒 dans l'interface.
+2. Émetteur : «🔄 Nouvelle Clé» puis «📋 Copier».
+3. Destinataire : coller la clé dans «Importer une Clé» puis «📥 Importer».
+4. Activer le toggle de chiffrement **des deux côtés**. Les messages `[ENCRYPTED]...` se déchiffrent automatiquement si la clé est identique. La clé est stockée en localStorage ; réimportez-la si le navigateur est réinitialisé.
 
 ### Mode Terminal (Scripts originaux)
 

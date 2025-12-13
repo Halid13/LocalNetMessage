@@ -15,6 +15,7 @@ Il agit comme un pont entre le navigateur (Socket.IO) et le serveur TCP bas nive
 - socket (TCP): connexion bas niveau au serveur (port par défaut 5555 dans ce fichier, mais le projet normalise sur 12345 côté serveur principal)
 - threading: thread séparé pour la réception non bloquante
 - **SQLite** (via `database.py`): persistance messages et fichiers locaux
+- **Chiffrement léger côté navigateur**: XOR + double Base64 via `static/encryption.js`; clé partagée manuellement et stockée en localStorage
 
 ## Variables Globales Principales
 - `client_socket`: socket TCP actif vers le serveur
@@ -32,6 +33,12 @@ Il agit comme un pont entre le navigateur (Socket.IO) et le serveur TCP bas nive
 3. Le pseudo (`username`) est envoyé immédiatement comme premier payload TCP.
 4. Le thread `receive_messages` démarre pour écouter en continu.
 5. Un événement Socket.IO `connected` est renvoyé au navigateur pour mise à jour UI.
+
+### Chiffrement côté UI (panneau 🔒 dans `client.html`)
+- Générer une clé sur un navigateur (bouton «🔄 Nouvelle Clé») puis copier.
+- Sur l'autre pair, coller la clé dans «Importer une Clé» et cliquer «📥 Importer».
+- Activer le toggle de chiffrement des deux côtés ; les messages `[ENCRYPTED]...` seront déchiffrés si la clé est identique.
+- La clé est conservée dans localStorage ; réimporter si le stockage est vidé ou si vous changez de navigateur. Les fichiers ne sont pas chiffrés.
 
 ## Réception des Messages (`receive_messages`)
 Boucle tant que `connected` est vrai:

@@ -112,6 +112,7 @@ python client_web.py
 
 ## 9. Sécurité et Limites Actuelles
 - Transport TCP non chiffré (LAN seulement recommandé).
+- Chiffrement léger côté navigateur pour les messages texte (XOR + double Base64) via `static/encryption.js` et le panneau 🔒. La clé est partagée manuellement (copie/import) et stockée en localStorage.
 - Aucune authentification intégrée.
 - Historique en mémoire (perdu au redémarrage).
 - Pas de quotas/rate limiting.

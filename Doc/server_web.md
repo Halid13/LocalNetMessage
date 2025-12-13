@@ -13,6 +13,7 @@ Il sert de point central: chaque client TCP est géré dans un thread dédié, e
 - socket (TCP): écoute des connexions entrantes sur `PORT = 12345`
 - threading: un thread pour le serveur TCP + un thread par client
 - **SQLite** (via `database.py`): persistance messages/fichiers/clients
+- **Chiffrement léger côté navigateur**: XOR + double Base64 via `static/encryption.js`; clé partagée manuellement et stockée en localStorage
 
 ## Variables & Structures
 - `HOST = '0.0.0.0'`: écoute sur toutes les interfaces
@@ -61,6 +62,12 @@ Format d'un message stocké:
 | `/` | GET | Interface du serveur (`server.html`) |
 | `/client` | GET | Interface client web (alternative) |
 | `/set_server_username` | POST | Modifie `server_username` si valide |
+
+## Chiffrement côté UI (panneau 🔒)
+- Générer une clé (bouton «🔄 Nouvelle Clé») puis copier.
+- Coller/importer la même clé côté client ou autre navigateur via «📥 Importer».
+- Activer le toggle de chiffrement des deux côtés ; les messages `[ENCRYPTED]...` sont déchiffrés automatiquement si la clé est identique.
+- La clé reste en localStorage ; si vidé/changement de navigateur, réimporter la clé. Les fichiers ne sont pas chiffrés.
 
 ## Événements Socket.IO (Entrants)
 | Événement | Fonction | Description |
