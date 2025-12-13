@@ -16,7 +16,6 @@ class MessageEncryption {
     loadEncryptionKey() {
         let key = localStorage.getItem('encryptionKey');
         if (!key) {
-            // Générer une nouvelle clé si elle n'existe pas
             key = this.generateRandomKey();
             localStorage.setItem('encryptionKey', key);
         }
@@ -76,10 +75,8 @@ class MessageEncryption {
         }
 
         try {
-            // Convertir le message en base64
             const encoded = btoa(unescape(encodeURIComponent(message)));
             
-            // XOR avec la clé
             let encrypted = '';
             for (let i = 0; i < encoded.length; i++) {
                 const keyChar = this.encryptionKey[i % this.encryptionKey.length];
@@ -89,10 +86,8 @@ class MessageEncryption {
                 );
             }
             
-            // Encoder en base64 pour la transmission
             const finalEncrypted = btoa(encrypted);
             
-            // Marquer le message comme chiffré
             return '[ENCRYPTED]' + finalEncrypted;
         } catch (error) {
             console.error('Erreur lors du chiffrement:', error);
@@ -109,13 +104,10 @@ class MessageEncryption {
         }
 
         try {
-            // Retirer le préfixe
             const encrypted = encryptedMessage.substring('[ENCRYPTED]'.length);
             
-            // Décoder depuis base64
             const decoded = atob(encrypted);
             
-            // XOR inverse avec la clé
             let decrypted = '';
             for (let i = 0; i < decoded.length; i++) {
                 const keyChar = this.encryptionKey[i % this.encryptionKey.length];
@@ -124,7 +116,6 @@ class MessageEncryption {
                 );
             }
             
-            // Décoder depuis base64
             const message = decodeURIComponent(escape(atob(decrypted)));
             return message;
         } catch (error) {
@@ -161,7 +152,6 @@ class MessageEncryption {
      */
     formatKeyForDisplay() {
         if (!this.encryptionKey) return '';
-        // Afficher les 8 premiers et 8 derniers caractères
         const start = this.encryptionKey.substring(0, 8);
         const end = this.encryptionKey.substring(this.encryptionKey.length - 8);
         return `${start}...${end}`;
@@ -172,15 +162,12 @@ class MessageEncryption {
      */
     verifyKey(key) {
         if (!key) return false;
-        // Autoriser les clés hexadécimales de 32+ caractères pour garder la compatibilité
         const normalized = key.trim();
         const isHex = /^[0-9a-fA-F]{32,}$/; 
         return isHex.test(normalized);
     }
 }
 
-// Créer une instance globale
 const encryption = new MessageEncryption();
 
-// Rendre accessible globalement
 window.encryption = encryption;

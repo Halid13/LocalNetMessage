@@ -5,7 +5,6 @@
 class EncryptionUI {
     constructor() {
         this.modalOpen = false;
-        // Attendre que window.encryption soit disponible
         this.encryption = window.encryption;
         
         if (!this.encryption) {
@@ -17,7 +16,6 @@ class EncryptionUI {
     }
 
     init() {
-        // Attendre que le DOM soit complètement chargé
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.setupUI());
         } else {
@@ -26,15 +24,12 @@ class EncryptionUI {
     }
 
     setupUI() {
-        // Créer le panneau de chiffrement si ce n'existe pas
         if (!document.getElementById('encryption-panel')) {
             this.createEncryptionPanel();
         }
 
-        // Ajouter les écouteurs d'événements
         this.attachEventListeners();
 
-        // Mettre à jour l'interface avec l'état initial
         this.updateEncryptionStatus();
         this.updateKeyDisplay();
     }
@@ -117,19 +112,16 @@ class EncryptionUI {
     }
 
     attachEventListeners() {
-        // Bouton d'ouverture
         const encryptionBtn = document.getElementById('encryption-btn');
         if (encryptionBtn) {
             encryptionBtn.addEventListener('click', () => this.toggleModal());
         }
 
-        // Bouton de fermeture
         const closeBtn = document.getElementById('encryption-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => this.toggleModal());
         }
 
-        // Fermer le modal en cliquant en dehors
         const modal = document.getElementById('encryption-modal');
         if (modal) {
             modal.addEventListener('click', (e) => {
@@ -139,7 +131,6 @@ class EncryptionUI {
             });
         }
 
-        // Toggle du chiffrement (parent container ET élément toggle)
         const encryptionToggleParent = document.querySelector('.encryption-toggle');
         if (encryptionToggleParent) {
             encryptionToggleParent.addEventListener('click', () => this.toggleEncryption());
@@ -152,7 +143,6 @@ class EncryptionUI {
             });
         }
 
-        // Boutons de gestion de clé
         const newKeyBtn = document.getElementById('encryption-new-key-btn');
         if (newKeyBtn) {
             newKeyBtn.addEventListener('click', () => this.generateNewKey());
@@ -168,13 +158,11 @@ class EncryptionUI {
             resetBtn.addEventListener('click', () => this.resetEncryption());
         }
 
-        // Import de clé
         const importBtn = document.getElementById('encryption-import-btn');
         if (importBtn) {
             importBtn.addEventListener('click', () => this.importKey());
         }
 
-        // Mettre à jour l'affichage initial
         this.updateEncryptionStatus();
     }
 
@@ -192,7 +180,6 @@ class EncryptionUI {
         this.encryption.setEncryptionEnabled(!currentState);
         this.updateEncryptionStatus();
 
-        // Feedback visuel
         this.showNotification(
             !currentState ? '🔒 Chiffrement activé' : '🔓 Chiffrement désactivé',
             !currentState ? '#48bb78' : '#f56565'
@@ -209,7 +196,6 @@ class EncryptionUI {
             '#667eea'
         );
 
-        // Log l'action
         console.log('Nouvelle clé de chiffrement générée');
     }
 
@@ -247,7 +233,6 @@ class EncryptionUI {
     }
 
     importKey() {
-        // Éviter que l'utilisateur soit bloqué par l'ancienne clé: validation de forme uniquement
         const input = document.getElementById('encryption-import-input');
         const importedKey = input.value.trim();
 
@@ -256,14 +241,12 @@ class EncryptionUI {
             return;
         }
 
-        // Valider la clé
         const isValid = this.encryption.verifyKey(importedKey);
         if (!isValid) {
             this.showNotification('❌ Clé invalide (32+ caractères hexadécimaux attendus)', '#f56565');
             return;
         }
 
-        // Importer la clé
         this.encryption.setKey(importedKey.trim());
         this.encryption.setEncryptionEnabled(true);
         input.value = '';
@@ -282,25 +265,21 @@ class EncryptionUI {
     updateEncryptionStatus() {
         const isEnabled = this.encryption.isEnabled();
 
-        // Mettre à jour le toggle
         const toggle = document.getElementById('encryption-toggle');
         if (toggle) {
             toggle.classList.toggle('active', isEnabled);
         }
 
-        // Mettre à jour le texte du toggle
         const toggleText = document.getElementById('encryption-toggle-text');
         if (toggleText) {
             toggleText.textContent = isEnabled ? 'Activé' : 'Désactivé';
         }
 
-        // Mettre à jour l'indicateur de statut
         const statusIndicator = document.getElementById('encryption-status');
         if (statusIndicator) {
             statusIndicator.classList.toggle('disabled', !isEnabled);
         }
 
-        // Mettre à jour le texte d'état
         const statusText = document.getElementById('encryption-status-text');
         if (statusText) {
             const statusDot = statusText.querySelector('.status-dot-small');
@@ -311,7 +290,6 @@ class EncryptionUI {
                                      (isEnabled ? 'Chiffrement activé' : 'Chiffrement désactivé');
         }
 
-        // Mettre à jour le bouton principal
         const encryptionBtn = document.getElementById('encryption-btn');
         if (encryptionBtn) {
             encryptionBtn.textContent = isEnabled ? '🔒' : '🔓';
@@ -324,7 +302,6 @@ class EncryptionUI {
 
         if (keyDisplay) {
             if (key) {
-                // Afficher la clé de manière formatée (masquée au milieu)
                 const formatted = this.encryption.formatKeyForDisplay();
                 keyDisplay.textContent = formatted;
             } else {
@@ -334,7 +311,6 @@ class EncryptionUI {
     }
 
     showNotification(message, color = '#667eea') {
-        // Créer une notification temporaire
         const notification = document.createElement('div');
         notification.style.cssText = `
             position: fixed;
@@ -354,7 +330,6 @@ class EncryptionUI {
 
         document.body.appendChild(notification);
 
-        // Ajouter l'animation CSS
         const style = document.createElement('style');
         if (!document.getElementById('notification-styles')) {
             style.id = 'notification-styles';
@@ -383,7 +358,6 @@ class EncryptionUI {
             document.head.appendChild(style);
         }
 
-        // Supprimer la notification après 3 secondes
         setTimeout(() => {
             notification.style.animation = 'slideOut 0.3s ease';
             setTimeout(() => {
@@ -393,8 +367,6 @@ class EncryptionUI {
     }
 }
 
-// Initialiser l'interface de chiffrement
 const encryptionUI = new EncryptionUI();
 
-// Rendre accessible globalement pour debugging
 window.encryptionUI = encryptionUI;
