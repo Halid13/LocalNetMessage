@@ -3,16 +3,16 @@
 Ce guide décrit le chiffrement léger côté navigateur utilisé dans LocalNetMessage, son fonctionnement et son usage.
 
 ## Principe
-- Chiffrement symétrique **XOR + double Base64** réalisé dans `static/encryption.js`.
+- Chiffrement symétrique **XOR + double Base64** réalisé dans `encryptions/encryption.js`.
 - La clé est générée/gérée dans le navigateur et stockée en **localStorage**.
 - Les messages chiffrés portent le préfixe `[ENCRYPTED]` et sont déchiffrés automatiquement si les deux pairs partagent la même clé.
-- Le chiffrement est conçu pour un usage LAN léger (non destiné à de la sécurité forte ou à protéger des secrets sensibles).
+- Le chiffrement est conçu pour un usage LAN.
 
 ## Génération et partage de clé
 1. Ouvrir le panneau 🔒 dans l'UI.
-2. Côté émetteur : cliquer sur «🔄 Nouvelle Clé», puis «📋 Copier».
-3. Côté destinataire : coller la clé dans «Importer une Clé», cliquer sur «📥 Importer».
-4. Activer le toggle de chiffrement sur **les deux côtés**.
+2. Activer le toggle de chiffrement sur **les deux côtés**.
+3. Côté émetteur : cliquer sur «🔄 Nouvelle Clé», puis «📋 Copier».
+4. Côté destinataire : coller la clé dans «Importer une Clé», cliquer sur «📥 Importer».
 
 Notes :
 - La clé reste dans le localStorage du navigateur. Si vous videz le stockage ou changez de navigateur, réimportez la clé.

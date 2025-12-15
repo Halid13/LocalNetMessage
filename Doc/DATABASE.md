@@ -98,46 +98,6 @@ Si un client se reconecte ou le serveur redémarre:
 
 ## Usage dans le Code
 
-### Module `database.py`
-Classe `Database` avec méthodes CRUD:
-
-```python
-from database import Database
-
-# Initialisation
-db = Database('messages.db')
-
-# Sauvegarder un message
-db.save_message(
-    client_id=1,
-    message_type='received',
-    sender='Alice',
-    message='Bonjour!',
-    timestamp='2025-12-06T10:30:00'
-)
-
-# Récupérer l'historique
-messages = db.get_messages(client_id=1)
-
-# Sauvegarder fichier
-db.save_file(
-    client_id=1,
-    filename='photo.jpg',
-    mimetype='image/jpeg',
-    size=5120,
-    file_type='received',
-    sender='Bob',
-    file_path='/uploads/client/received/photo.jpg',
-    timestamp='2025-12-06T10:31:00'
-)
-
-# Récupérer historique client
-history = db.get_client_history(client_id=1)
-
-# Exporter en JSON
-db.export_to_json(client_id=1, output_path='client_1_export.json')
-```
-
 ## Avantages
 
 ✓ **Persistance**: Historique conservé après redémarrage  
