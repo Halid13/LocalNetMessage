@@ -19,22 +19,18 @@
   function saveProfile(p){ localStorage.setItem(storageKey, JSON.stringify(p)); }
 
   function applyProfile(p, updateBackend = false){
-    // Theme
     if (typeof window.setTheme === 'function') {
       window.setTheme(p.theme);
     } else {
       document.documentElement.setAttribute('data-theme', p.theme);
       localStorage.setItem('selectedTheme', p.theme);
     }
-    // Encryption default
     if (p.encryptionDefault && window.encryption && typeof window.encryption.setEncryptionEnabled==='function') {
       window.encryption.setEncryptionEnabled(true);
     }
-    // Apply name/avatar to UI
     if (isServer) {
       const nameEl = document.getElementById('server-username-display');
       if (nameEl && p.displayName) nameEl.textContent = p.displayName;
-      // Update backend name only when explicitly saving
       if (updateBackend && p.displayName) {
         try { fetch('/set_server_username', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username: p.displayName})}); } catch {}
       }
@@ -42,7 +38,6 @@
       const userInput = document.getElementById('username');
       if (userInput && p.displayName && !userInput.value) userInput.value = p.displayName;
     }
-    // Avatar in headers if present
     const headerAvatar = document.querySelector('.server-avatar, .logo-wrapper');
     if (headerAvatar) {
       headerAvatar.setAttribute('data-avatar', p.avatar);
@@ -50,7 +45,6 @@
   }
 
   function createUI(){
-    // Try to use header button if present; fallback to floating button
     let btn = document.getElementById('profile-btn');
     const needsFloating = !btn;
     if (needsFloating) {
@@ -61,7 +55,6 @@
       btn.textContent = '👤';
     }
 
-    // Modal
     const modal = document.createElement('div');
     modal.className = 'profile-modal';
     modal.id = 'profile-modal';
@@ -114,7 +107,6 @@
     if (needsFloating) document.body.appendChild(btn);
     document.body.appendChild(modal);
 
-    // Bind events
     const state = { open:false };
     const open = ()=>{ modal.classList.add('open'); state.open=true; syncForm(); };
     const close = ()=>{ modal.classList.remove('open'); state.open=false; };
@@ -123,7 +115,6 @@
     content.querySelector('#profile-close').addEventListener('click', close);
     content.querySelector('#profile-cancel').addEventListener('click', close);
 
-    // Load profile into form
     function syncForm(){
       const p = loadProfile();
       content.querySelector('#profile-displayName').value = p.displayName || '';
@@ -156,14 +147,12 @@
       p.theme = content.querySelector('#profile-theme').value;
       p.encryptionDefault = content.querySelector('#profile-encryption').checked;
       saveProfile(p);
-      applyProfile(p, true); // updateBackend = true when explicitly saving
+      applyProfile(p, true);
       
-      // If client-side, emit rename_user if name changed
       if (!isServer && oldName !== p.displayName && p.displayName && window.socket) {
         try { window.socket.emit('rename_user', {username: p.displayName}); } catch (e) { console.warn('Could not emit rename_user:', e); }
       }
       
-      // Emit status change if status changed
       if (!isServer && oldStatus !== p.status && window.socket && p.status) {
         try { 
           console.log('Émission change_status:', p.status);
@@ -173,7 +162,6 @@
         }
       }
       
-      // Server status change
       if (isServer && oldStatus !== p.status && p.status) {
         try { 
           fetch('/set_server_status', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: p.status || 'Disponible'})}); 
@@ -186,9 +174,7 @@
     });
   }
 
-  // Initialize
   function init(){
-    // Inject CSS if not present
     if (!document.querySelector('link[href*="/static/profile.css"]')){
       const link = document.createElement('link');
       link.rel = 'stylesheet';

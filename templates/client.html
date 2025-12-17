@@ -273,13 +273,12 @@
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
-        let socket = io('http://localhost:5001');  // Connexion Socket.IO dès le chargement
-        window.socket = socket;  // Rendre socket accessible globalement
+        let socket = io('http://localhost:5001');
+        window.socket = socket;
         let isConnected = false;
         const messageInput = document.getElementById('message-input');
         const messagesContainer = document.getElementById('messages');
 
-        // Connexion au serveur
         function connectToServer() {
             const username = document.getElementById('username').value.trim();
             const serverIp = document.getElementById('server-ip').value.trim();
@@ -295,7 +294,6 @@
                 return;
             }
 
-            // Déclencher la connexion TCP via Socket.IO
             socket.emit('connect_to_server', {
                 username: username,
                 server_ip: serverIp,
@@ -303,7 +301,6 @@
             });
         }
 
-        // Événements Socket.IO (initialisés dès le chargement)
         socket.on('connect', () => {
             console.log('Socket.IO connecté au serveur Flask client_web.py');
         });
@@ -331,10 +328,8 @@
 
         socket.on('server_username_updated', (data) => {
             if (data.username) {
-                // Update server name display in chat header
                 const headerEl = document.querySelector('.server-details h2');
                 if (headerEl) headerEl.textContent = data.username;
-                // Update message sender labels
                 const senderLabels = document.querySelectorAll('.message.received .message-sender');
                 senderLabels.forEach((label) => {
                     label.textContent = data.username;
@@ -361,7 +356,6 @@
         });
 
         socket.on('client_renamed', (data) => {
-            // If another client is renamed (multi-client scenario)
             if (data.username) {
                 addSystemMessage(`Un client a changé son nom en ${data.username}`);
             }
@@ -380,7 +374,6 @@
         socket.on('message_received', (data) => {
             const senderName = data.server_username || 'Serveur';
             
-            // Déchiffrer le message si c'est un message chiffré
             let messageContent = data.message;
             if (encryption && data.message.startsWith('[ENCRYPTED]')) {
                 try {
@@ -395,7 +388,6 @@
         });
 
         socket.on('message_sent', (data) => {
-            // Déchiffrer le message si c'est un message chiffré (pour l'affichage)
             let messageContent = data.message;
             if (encryption && data.message.startsWith('[ENCRYPTED]')) {
                 try {
@@ -423,7 +415,6 @@
             updateReadStatus(data.message_id, 'read');
         });
 
-        // Déconnexion du serveur
         function disconnectFromServer() {
             if (socket) {
                 socket.emit('disconnect_from_server');
@@ -445,7 +436,6 @@
             `;
         }
 
-        // Mise à jour du statut de connexion
         function updateConnectionStatus(connected) {
             const statusElement = document.getElementById('connection-status');
             const statusDot = statusElement.querySelector('.status-dot');
@@ -471,11 +461,9 @@
             }
         }
 
-        // Envoyer un message
         function sendMessage() {
             const message = messageInput.value.trim();
             
-            // Validation du message
             if (!message) {
                 showValidationError('Le message ne peut pas être vide.');
                 return;
@@ -491,7 +479,6 @@
                 return;
             }
             
-            // Chiffrer le message si le chiffrement est activé
             let messageToSend = message;
             if (encryption && encryption.isEnabled()) {
                 messageToSend = encryption.encrypt(message);
@@ -505,7 +492,6 @@
             autoResize();
         }
 
-        // Ajouter un message
         function addMessage(sender, message, type, messageId = null) {
             const welcomeMsg = messagesContainer.querySelector('.welcome-message, .modern-welcome');
             if (welcomeMsg) welcomeMsg.remove();
@@ -519,11 +505,9 @@
                 messageElement.dataset.messageId = messageId;
             }
             
-            // Générer une couleur d'avatar basée sur le nom
             const avatarColor = getAvatarColor(sender);
             const avatarInitial = sender.charAt(0).toUpperCase();
             
-            // Statut de lecture pour les messages envoyés
             const readStatus = type === 'sent' ? '<span class="read-status modern-read-status" data-status="sent">✓</span>' : '';
             
             messageElement.innerHTML = `
@@ -543,10 +527,8 @@
             messagesContainer.appendChild(messageElement);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             
-            // Animation d'entrée
             setTimeout(() => messageElement.classList.add('message-visible'), 10);
             
-            // Notification sonore pour les messages reçus
             if (type === 'received') {
                 playNotificationSound();
             }
@@ -554,7 +536,6 @@
             return messageElement;
         }
 
-        // Ajouter un message fichier (avec lien)
         function addFileMessage(sender, filename, url, type) {
             const welcomeMsg = messagesContainer.querySelector('.welcome-message, .modern-welcome');
             if (welcomeMsg) welcomeMsg.remove();
@@ -586,7 +567,6 @@
             setTimeout(() => messageElement.classList.add('message-visible'), 10);
         }
         
-        // Générer une couleur d'avatar unique basée sur le nom
         function getAvatarColor(name) {
             const colors = [
                 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -605,7 +585,6 @@
             return colors[Math.abs(hash) % colors.length];
         }
 
-        // Ajouter un message système
         function addSystemMessage(message) {
             const messageElement = document.createElement('div');
             messageElement.className = 'message system modern-system-msg';
@@ -623,7 +602,6 @@
             setTimeout(() => messageElement.classList.add('message-visible'), 10);
         }
 
-        // Effacer les messages
         function clearMessages() {
             messagesContainer.innerHTML = `
                 <div class="welcome-message modern-welcome">
@@ -636,7 +614,6 @@
             `;
         }
 
-        // Auto-resize textarea
         function autoResize() {
             messageInput.style.height = 'auto';
             messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
@@ -644,7 +621,6 @@
 
         messageInput.addEventListener('input', autoResize);
 
-        // Gestion des touches
         messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -652,28 +628,22 @@
             }
         });
 
-        // Escape HTML
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
         
-        // Formater le message (gras, italique, emojis)
         function formatMessage(text) {
-            // Gras: **texte** -> <strong>texte</strong>
             text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
             
-            // Italique: *texte* -> <em>texte</em>
             text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
             
-            // Saut de ligne
             text = text.replace(/\n/g, '<br>');
             
             return text;
         }
         
-        // Formater le texte (gras, italique)
         function formatText(format) {
             const textarea = messageInput;
             const start = textarea.selectionStart;
@@ -698,13 +668,11 @@
             updateCharCount();
         }
         
-        // Toggle emoji picker
         function toggleEmojiPicker() {
             const picker = document.getElementById('emoji-picker');
             picker.style.display = picker.style.display === 'none' ? 'grid' : 'none';
         }
         
-        // Insérer un emoji
         function insertEmoji(emoji) {
             const textarea = messageInput;
             const start = textarea.selectionStart;
@@ -718,12 +686,9 @@
             updateCharCount();
         }
         
-        // Mettre à jour le compteur de caractères
         function updateCharCount() {
-            // Fonction désactivée - compteur retiré de l'interface
         }
         
-        // Afficher une erreur de validation
         function showValidationError(message) {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'validation-error';
@@ -749,7 +714,6 @@
             }, 3000);
         }
         
-        // Jouer un son de notification
         function playNotificationSound() {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
@@ -768,7 +732,6 @@
             oscillator.stop(audioContext.currentTime + 0.3);
         }
 
-        // Convertir le statut en classe CSS
         function getStatusClass(status) {
             const statusMap = {
                 'Disponible': 'disponible',
@@ -778,7 +741,6 @@
             return statusMap[status] || 'disponible';
         }
         
-        // Mettre à jour le statut de lecture
         function updateReadStatus(messageId, status) {
             const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
             if (messageElement) {
@@ -793,13 +755,11 @@
             }
         }
         
-        // Mise à jour du compteur lors de la saisie
         messageInput.addEventListener('input', () => {
             updateCharCount();
             autoResize();
         });
         
-        // Raccourcis clavier pour le formatage
         messageInput.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'b') {
                 e.preventDefault();
@@ -810,8 +770,6 @@
             }
         });
         
-        // Fermer le sélecteur d'emojis si on clique ailleurs
-        // Gestion du thème
         function applyTheme(theme) {
             if (theme === 'dark') {
                 document.body.classList.add('dark');
@@ -848,7 +806,6 @@
             }
         });
 
-        // Gestion envoi de fichier
         document.getElementById('file-input').addEventListener('change', (e) => {
             console.log('File input changed, socket:', socket, 'connected:', socket ? socket.connected : 'N/A', 'isConnected:', isConnected);
             if (!socket || !socket.connected) {
@@ -884,39 +841,28 @@
             e.target.value = '';
         });
 
-        // ========== GESTION DES THÈMES PERSONNALISÉS ==========
-        
-        // Initialiser le thème
         function initColorTheme() {
             const savedTheme = localStorage.getItem('colorTheme') || 'violet';
             setTheme(savedTheme);
         }
         
-        // Définir un thème
         function setTheme(themeName) {
             const html = document.documentElement;
             const allThemes = ['violet', 'rose', 'cyan', 'green', 'orange', 'turquoise', 'peach', 'indigo', 'coral'];
             
-            // Ajouter transition
             html.classList.add('theme-transitioning');
             
-            // Retirer tous les thèmes
             allThemes.forEach(theme => html.classList.remove(`theme-${theme}`));
             
-            // Ajouter le nouveau thème
             html.classList.add(`theme-${themeName}`);
             
-            // Mettre à jour le sélecteur visuel
             updateThemeSelection(themeName);
             
-            // Sauvegarder le choix
             localStorage.setItem('colorTheme', themeName);
             
-            // Retirer la transition après l'animation
             setTimeout(() => html.classList.remove('theme-transitioning'), 300);
         }
         
-        // Basculer le menu de sélection
         function toggleThemeMenu() {
             const menu = document.getElementById('theme-menu');
             if (menu) {
@@ -924,7 +870,6 @@
             }
         }
         
-        // Fermer le menu quand on clique ailleurs
         document.addEventListener('click', function(e) {
             const menu = document.getElementById('theme-menu');
             const btn = document.getElementById('theme-menu-btn');
@@ -933,7 +878,6 @@
             }
         });
         
-        // Mettre à jour la sélection visuelle
         function updateThemeSelection(themeName) {
             const options = document.querySelectorAll('.theme-option');
             options.forEach(opt => opt.classList.remove('active'));
@@ -941,7 +885,6 @@
             if (activeOption) activeOption.classList.add('active');
         }
         
-        // Initialiser au chargement de la page
         window.addEventListener('load', function() {
             initColorTheme();
         });
