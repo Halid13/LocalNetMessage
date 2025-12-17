@@ -251,16 +251,14 @@
     <script>
         let socket;
         let selectedClient = null;
-        let clientConversations = {};  // Stocker les conversations par client
+        let clientConversations = {};
         let messageInput;
         let sendBtn;
         let messagesContainer;
-        let serverUsername = '';  // Nom d'utilisateur du serveur
+        let serverUsername = '';
         
-        // Son de notification
         const notificationSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjGH0fPTgjMGHm7A7+OZURE');
 
-        // Démarrer le serveur après avoir saisi le username
         function startServer() {
             console.log('startServer() appelée');
             const usernameInput = document.getElementById('server-username');
@@ -280,12 +278,10 @@
                 return;
             }
             
-            // Sauvegarder le username
             serverUsername = username;
             
             console.log('Envoi de la requête au serveur...');
             
-            // Envoyer le username au serveur Flask
             fetch('/set_server_username', {
                 method: 'POST',
                 headers: {
@@ -300,21 +296,17 @@
             .then(data => {
                 console.log('Données reçues:', data);
                 if (data.success) {
-                    // Masquer la page d'accueil et afficher l'interface serveur
                     document.getElementById('welcome-page').style.display = 'none';
                     document.getElementById('server-container').style.display = 'flex';
                     document.getElementById('server-username-display').textContent = username;
                     
-                    // Initialiser les éléments et socket
                     messageInput = document.getElementById('message-input');
                     sendBtn = document.getElementById('send-btn');
                     messagesContainer = document.getElementById('messages');
                     
-                    // Connecter au WebSocket
                     socket = io();
                     initializeSocketEvents();
                     
-                    // Gestion de la touche Entrée pour envoyer les messages
                     messageInput.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -322,7 +314,6 @@
                         }
                     });
                     
-                    // Auto-resize du textarea
                     messageInput.addEventListener('input', autoResize);
                     
                     console.log('Interface serveur initialisée avec succès');
@@ -334,31 +325,25 @@
             });
         }
         
-        // Initialiser les événements Socket.IO
         function initializeSocketEvents() {
-            // Connexion établie
             socket.on('connect', () => {
                 console.log('Connecté au serveur WebSocket');
             });
 
-            // Nouvelle connexion client
             socket.on('client_connected', (data) => {
                 addClientToList(data.client_id, data.username, data.address);
                 updateConnectionCount();
                 
-                // Initialiser la conversation pour ce client
                 if (!clientConversations[data.client_id]) {
                     clientConversations[data.client_id] = [];
                 }
                 
-                // Ajouter un message système dans sa conversation
                 clientConversations[data.client_id].push({
                     type: 'system',
                     message: `${data.username} (${data.address}) connecté`
                 });
             });
 
-            // Client renommé
             socket.on('client_renamed', (data) => {
                 const item = document.getElementById(`client-${data.client_id}`);
                 if (item) {
@@ -372,23 +357,18 @@
                     });
                 }
                 if (selectedClient === data.client_id) {
-                    // Mettre à jour le header
                     updateSelectedClient();
                     
-                    // Mettre à jour les messages reçus de ce client dans la conversation affichée
                     const receivedMessages = messagesContainer.querySelectorAll('.message.received .message-sender');
                     receivedMessages.forEach((senderEl) => {
                         senderEl.textContent = data.username;
                     });
                     
-                    // Ajouter un message système
                     addMessageToDisplay('Système', `${data.username} a changé son nom.`, 'system');
                 }
             });
 
-            // Client déconnecté
             socket.on('client_disconnected', (data) => {
-                // Ajouter un message système dans sa conversation
                 if (clientConversations[data.client_id]) {
                     clientConversations[data.client_id].push({
                         type: 'system',
@@ -406,13 +386,11 @@
                 }
             });
 
-            // Nom du serveur mis à jour
             socket.on('server_username_updated', (data) => {
                 const el = document.getElementById('server-username-display');
                 if (el && data.username) el.textContent = data.username;
             });
 
-            // Statut du serveur mis à jour
             socket.on('server_status_updated', (data) => {
                 const el = document.getElementById('server-status-display');
                 if (el && data.status) {
@@ -421,7 +399,6 @@
                 }
             });
 
-            // Statut d'un client changé
             socket.on('client_status_changed', (data) => {
                 const item = document.getElementById(`client-${data.client_id}`);
                 if (item) {
@@ -442,14 +419,11 @@
                 }
             });
 
-            // Message reçu
             socket.on('message_received', (data) => {
-                // Initialiser la conversation si elle n'existe pas
                 if (!clientConversations[data.client_id]) {
                     clientConversations[data.client_id] = [];
                 }
                 
-                // Déchiffrer le message si c'est un message chiffré
                 let messageContent = data.message;
                 if (encryption && data.message.startsWith('[ENCRYPTED]')) {
                     try {
@@ -460,7 +434,6 @@
                     }
                 }
                 
-                // Ajouter le message à la conversation du client
                 clientConversations[data.client_id].push({
                     type: 'received',
                     sender: data.username,
@@ -475,30 +448,24 @@
                     })
                 });
                 
-                // Si ce client est sélectionné, afficher le message et marquer comme lu
                 if (selectedClient === data.client_id) {
                     addMessageToDisplay(data.username, messageContent, 'received');
                     markClientMessagesAsRead(data.client_id);
                 } else {
-                    // Si un autre client est sélectionné, afficher une notification
                     showNotification(data.client_id);
                     playNotificationSound();
                 }
                 
-                // Auto-sélectionner le client si aucun n'est sélectionné
                 if (!selectedClient) {
                     selectClient(data.client_id);
                 }
             });
 
-            // Message envoyé confirmé
             socket.on('message_sent', (data) => {
-                // Ajouter le message à la conversation du client
                 if (!clientConversations[data.client_id]) {
                     clientConversations[data.client_id] = [];
                 }
             
-                // Déchiffrer le message si c'est un message chiffré (pour l'affichage)
                 let messageToStore = data.message;
                 if (encryption && data.message.startsWith('[ENCRYPTED]')) {
                     try {
@@ -523,13 +490,11 @@
                     })
                 });
                 
-                // Si ce client est sélectionné, afficher le message
                 if (selectedClient === data.client_id) {
                     addMessageToDisplay('Vous', messageToStore, 'sent');
                 }
             });
 
-            // Mise à jour de la liste des clients
             socket.on('clients_update', (data) => {
                 data.clients.forEach(client => {
                     if (!clientConversations[client.id]) {
@@ -540,7 +505,6 @@
                 updateConnectionCount();
             });
 
-            // Fichier reçu
             socket.on('file_received', (data) => {
                 if (!clientConversations[data.client_id]) {
                     clientConversations[data.client_id] = [];
@@ -562,7 +526,6 @@
                 }
             });
 
-            // Fichier envoyé (confirmation)
             socket.on('file_sent', (data) => {
                 if (!clientConversations[data.client_id]) {
                     clientConversations[data.client_id] = [];
@@ -576,14 +539,12 @@
                     timestamp: new Date().toLocaleString('fr-FR')
                 });
                 if (selectedClient === data.client_id) {
-                    // Lien de téléchargement depuis le dossier d'envoi serveur
                     const url = `/files/server/sent/${data.client_id}/${data.filename}`;
                     addFileToDisplay('Vous', data.filename, url, 'sent');
                 }
             });
         }
 
-        // Ajouter un client à la liste
         function addClientToList(clientId, username, address) {
             const clientsList = document.getElementById('clients-list');
             const emptyState = clientsList.querySelector('.empty-state');
@@ -605,7 +566,6 @@
             clientsList.appendChild(clientElement);
         }
 
-        // Retirer un client de la liste
         function removeClientFromList(clientId) {
             const clientElement = document.getElementById(`client-${clientId}`);
             if (clientElement) {
@@ -625,7 +585,6 @@
             }
         }
 
-        // Sélectionner un client
         function selectClient(clientId) {
             selectedClient = clientId;
             document.querySelectorAll('.client-item').forEach(el => {
@@ -642,19 +601,15 @@
                 sendBtn.disabled = false;
                 messageInput.focus();
                 
-                // Charger la conversation de ce client
                 loadClientConversation(clientId);
             }
         }
         
-        // Charger la conversation d'un client
         function loadClientConversation(clientId) {
             messagesContainer.innerHTML = '';
             
-            // Masquer la notification pour ce client
             hideNotification(clientId);
             
-            // Marquer les messages comme lus
             markClientMessagesAsRead(clientId);
             
             if (!clientConversations[clientId] || clientConversations[clientId].length === 0) {
@@ -662,7 +617,6 @@
                 return;
             }
             
-            // Afficher tous les messages de ce client
             clientConversations[clientId].forEach(msg => {
                 if (msg.type === 'system') {
                     addSystemMessageToDisplay(msg.message);
@@ -672,7 +626,6 @@
             });
         }
         
-        // Marquer les messages comme lus
         function markClientMessagesAsRead(clientId) {
             if (clientConversations[clientId]) {
                 clientConversations[clientId].forEach(msg => {
@@ -681,12 +634,10 @@
                     }
                 });
                 
-                // Envoyer au serveur
                 socket.emit('mark_messages_read', { client_id: clientId });
             }
         }
 
-        // Mettre à jour le client sélectionné
         function updateSelectedClient() {
             if (!selectedClient) {
                 document.getElementById('selected-client').innerHTML = `
@@ -695,7 +646,6 @@
                 messageInput.disabled = true;
                 sendBtn.disabled = true;
             } else {
-                // Mettre à jour le nom du client sélectionné dans le header
                 const clientElement = document.getElementById(`client-${selectedClient}`);
                 if (clientElement) {
                     const username = clientElement.querySelector('.client-name').textContent;
@@ -706,7 +656,6 @@
             }
         }
 
-        // Ajouter un message à l'affichage
         function addMessageToDisplay(sender, message, type, timestamp, read) {
             const messageElement = document.createElement('div');
             messageElement.className = `message ${type}`;
@@ -719,7 +668,6 @@
                 minute: '2-digit'
             });
             
-            // Indicateur de lecture pour les messages envoyés
             let readStatus = '';
             if (type === 'sent') {
                 readStatus = read 
@@ -742,7 +690,6 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // Afficher un fichier (message avec lien)
         function addFileToDisplay(sender, filename, url, type) {
             const messageElement = document.createElement('div');
             messageElement.className = `message ${type}`;
@@ -764,7 +711,6 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // Ajouter un message système à l'affichage
         function addSystemMessageToDisplay(message) {
             const messageElement = document.createElement('div');
             messageElement.className = 'message system';
@@ -781,7 +727,6 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // Afficher le message de bienvenue
         function showWelcomeMessage() {
             messagesContainer.innerHTML = `
                 <div class="welcome-message">
@@ -792,7 +737,6 @@
             `;
         }
 
-        // Afficher une notification pour un client
         function showNotification(clientId) {
             const badge = document.getElementById(`badge-${clientId}`);
             const clientItem = document.getElementById(`client-${clientId}`);
@@ -809,7 +753,6 @@
             }
         }
 
-        // Masquer la notification pour un client
         function hideNotification(clientId) {
             const badge = document.getElementById(`badge-${clientId}`);
             const clientItem = document.getElementById(`client-${clientId}`);
@@ -824,29 +767,22 @@
             }
         }
 
-        // Jouer le son de notification
         function playNotificationSound() {
             notificationSound.play().catch(err => {
                 console.log('Impossible de jouer le son:', err);
             });
         }
 
-        // Ajouter un message (ancienne fonction - gardée pour compatibilité)
         function addMessage(clientId, sender, message, type) {
             addMessageToDisplay(sender, message, type);
         }
 
-        // Ajouter un message système (ancienne fonction)
         function addSystemMessage(message) {
-            // Les messages système sont maintenant stockés par conversation
-            // Cette fonction n'est plus utilisée mais gardée pour compatibilité
         }
 
-        // Envoyer un message
         function sendMessage() {
             const message = messageInput.value.trim();
             
-            // Validation du message
             if (!message) {
                 alert('Le message ne peut pas être vide.');
                 return;
@@ -862,7 +798,6 @@
                 return;
             }
             
-            // Chiffrer le message si le chiffrement est activé
             let messageToSend = message;
             if (encryption && encryption.isEnabled()) {
                 messageToSend = encryption.encrypt(message);
@@ -876,7 +811,6 @@
             autoResize();
         }
 
-        // Gestion envoi de fichier
         document.getElementById('file-input').addEventListener('change', (e) => {
             if (!selectedClient) {
                 alert('Sélectionnez un client pour envoyer un fichier.');
@@ -905,10 +839,8 @@
             e.target.value = '';
         });
 
-        // Effacer les messages
         function clearMessages() {
             if (selectedClient && clientConversations[selectedClient]) {
-                // Effacer seulement la conversation du client sélectionné
                 clientConversations[selectedClient] = [];
                 messagesContainer.innerHTML = `
                     <div class="welcome-message">
@@ -922,14 +854,12 @@
             }
         }
 
-        // Mise à jour du compteur de connexions
         function updateConnectionCount() {
             const count = document.querySelectorAll('.client-item').length;
             document.getElementById('client-count').textContent = count;
             document.querySelector('#active-connections strong').textContent = count;
         }
 
-        // Convertir le statut en classe CSS
         function getStatusClass(status) {
             const statusMap = {
                 'Disponible': 'disponible',
@@ -939,7 +869,6 @@
             return statusMap[status] || 'disponible';
         }
 
-        // Mettre à jour l'indicateur de statut du serveur
         function updateStatusIndicator(status) {
             const statusDot = document.querySelector('.server-badge .status-dot');
             if (statusDot) {
@@ -947,34 +876,27 @@
             }
         }
 
-        // Auto-resize textarea
         function autoResize() {
             messageInput.style.height = 'auto';
             messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
         }
 
-        // Escape HTML
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
         
-        // Formater le message (gras, italique, emojis)
         function formatMessage(text) {
-            // Gras: **texte** -> <strong>texte</strong>
             text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
             
-            // Italique: *texte* -> <em>texte</em>
             text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
             
-            // Saut de ligne
             text = text.replace(/\n/g, '<br>');
             
             return text;
         }
         
-        // Insérer du formatage
         function insertFormatting(symbol) {
             const start = messageInput.selectionStart;
             const end = messageInput.selectionEnd;
@@ -988,7 +910,6 @@
                 messageInput.focus();
                 messageInput.setSelectionRange(start + symbol.length, end + symbol.length);
             } else {
-                // Insérer le symbole et placer le curseur au milieu
                 const newText = messageInput.value.substring(0, start) + 
                                symbol + symbol + 
                                messageInput.value.substring(end);
@@ -998,13 +919,11 @@
             }
         }
         
-        // Afficher/Masquer le sélecteur d'emojis
         function toggleEmojiPicker() {
             const picker = document.getElementById('emoji-picker');
             picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
         }
         
-        // Insérer un emoji
         function insertEmoji(emoji) {
             const start = messageInput.selectionStart;
             const end = messageInput.selectionEnd;
@@ -1016,12 +935,9 @@
             messageInput.focus();
             messageInput.setSelectionRange(start + emoji.length, start + emoji.length);
             
-            // Fermer le sélecteur
             document.getElementById('emoji-picker').style.display = 'none';
         }
         
-        // Initialisation au chargement de la page
-        // Gestion du thème
         function applyTheme(theme) {
             if (theme === 'dark') {
                 document.body.classList.add('dark');
@@ -1052,7 +968,6 @@
             console.log('Page chargée, initialisation...');
             initTheme();
             
-            // Permettre de soumettre avec Entrée sur le champ username
             const usernameInput = document.getElementById('server-username');
             if (usernameInput) {
                 usernameInput.addEventListener('keypress', function(e) {
@@ -1062,45 +977,32 @@
                     }
                 });
                 
-                // Focus automatique sur le champ
                 usernameInput.focus();
             }
             
-            // Initialiser le thème
             initColorTheme();
             
-            // Charger le thème sauvegardé
             const savedColorTheme = localStorage.getItem('colorTheme') || 'violet';
             setTheme(savedColorTheme);
         });
 
-        // ========== GESTION DES THÈMES PERSONNALISÉS ==========
-        
-        // Définir un thème
         function setTheme(themeName) {
             const html = document.documentElement;
             const allThemes = ['violet', 'rose', 'cyan', 'green', 'orange', 'turquoise', 'peach', 'indigo', 'coral'];
             
-            // Ajouter transition
             html.classList.add('theme-transitioning');
             
-            // Retirer tous les thèmes
             allThemes.forEach(theme => html.classList.remove(`theme-${theme}`));
             
-            // Ajouter le nouveau thème
             html.classList.add(`theme-${themeName}`);
             
-            // Mettre à jour le sélecteur visuel
             updateThemeSelection(themeName);
             
-            // Sauvegarder le choix
             localStorage.setItem('colorTheme', themeName);
             
-            // Retirer la transition après l'animation
             setTimeout(() => html.classList.remove('theme-transitioning'), 300);
         }
         
-        // Basculer le menu de sélection
         function toggleThemeMenu() {
             const menu = document.getElementById('theme-menu');
             if (menu) {
@@ -1108,7 +1010,6 @@
             }
         }
         
-        // Fermer le menu quand on clique ailleurs
         document.addEventListener('click', function(e) {
             const menu = document.getElementById('theme-menu');
             const btn = document.getElementById('theme-menu-btn');
@@ -1117,7 +1018,6 @@
             }
         });
         
-        // Mettre à jour la sélection visuelle
         function updateThemeSelection(themeName) {
             const options = document.querySelectorAll('.theme-option');
             options.forEach(opt => opt.classList.remove('active'));
@@ -1125,7 +1025,6 @@
             if (activeOption) activeOption.classList.add('active');
         }
         
-        // Initialiser le thème
         function initColorTheme() {
             const savedTheme = localStorage.getItem('colorTheme') || 'violet';
             setTheme(savedTheme);
