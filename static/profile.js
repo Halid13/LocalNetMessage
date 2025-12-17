@@ -83,7 +83,11 @@
       </div>
       <div class="profile-row">
         <label class="profile-label">Statut</label>
-        <input id="profile-status" class="profile-input" placeholder="Disponible, Occupé, ..." />
+        <select id="profile-status" class="profile-select">
+          <option value="Disponible">Disponible</option>
+          <option value="Occupé">Occupé</option>
+          <option value="En pause">En pause</option>
+        </select>
       </div>
       <div class="profile-row">
         <label class="profile-label">Avatar (emoji ou URL d'image)</label>
@@ -123,7 +127,7 @@
     function syncForm(){
       const p = loadProfile();
       content.querySelector('#profile-displayName').value = p.displayName || '';
-      content.querySelector('#profile-status').value = p.status || '';
+      content.querySelector('#profile-status').value = p.status || 'Disponible';
       content.querySelector('#profile-avatar').value = p.avatar || '';
       content.querySelector('#profile-theme').value = p.theme || THEMES[0];
       content.querySelector('#profile-encryption').checked = !!p.encryptionDefault;
@@ -145,6 +149,7 @@
     content.querySelector('#profile-save').addEventListener('click', ()=>{
       const p = loadProfile();
       const oldName = p.displayName;
+      const oldStatus = p.status;
       p.displayName = content.querySelector('#profile-displayName').value.trim();
       p.status = content.querySelector('#profile-status').value.trim();
       p.avatar = content.querySelector('#profile-avatar').value.trim() || '🙂';
@@ -156,6 +161,14 @@
       // If client-side, emit rename_user if name changed
       if (!isServer && oldName !== p.displayName && p.displayName && window.socket) {
         try { window.socket.emit('rename_user', {username: p.displayName}); } catch (e) { console.warn('Could not emit rename_user:', e); }
+      }
+      
+      // Emit status change if status changed
+      if (!isServer && oldStatus !== p.status && window.socket) {
+        try { window.socket.emit('change_status', {status: p.status || 'Disponible'}); } catch (e) { console.warn('Could not emit change_status:', e); }
+      } else if (isServer && oldStatus !== p.status) {
+        // Server status change
+        try { fetch('/set_server_status', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: p.status || 'Disponible'})}); } catch (e) { console.warn('Could not set server status:', e); }
       }
       
       close();

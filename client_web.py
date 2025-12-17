@@ -35,6 +35,8 @@ connected = False
 receive_thread = None
 username = None
 server_display_name = 'Serveur'
+server_status = 'Disponible'
+client_status = 'Disponible'
 message_counter = 0
 
 def receive_messages():
@@ -65,6 +67,13 @@ def receive_messages():
                             global server_display_name
                             server_display_name = line.split(":", 1)[1].strip() or 'Serveur'
                             print(f"[INFO] Nom du serveur défini: {server_display_name}")
+                            socketio.emit('server_username_updated', {'username': server_display_name})
+                            continue
+                        if line.startswith("__SERVER_STATUS__:"):
+                            global server_status
+                            server_status = line.split(":", 1)[1].strip() or 'Disponible'
+                            print(f"[INFO] Statut du serveur défini: {server_status}")
+                            socketio.emit('server_status_updated', {'status': server_status})
                             continue
                         if line.startswith("__FILE__|"):
                             try:
@@ -203,6 +212,22 @@ def handle_rename_user(data):
         except Exception as e:
             emit('error', {'message': f'Impossible de changer le nom: {e}'})
     emit('user_renamed', {'username': new_name})
+
+@socketio.on('change_status')
+def handle_change_status(data):
+    """Changer le statut côté client et notifier le serveur TCP"""
+    global client_socket, connected, client_status
+    new_status = data.get('status', '').strip()
+    if not new_status:
+        emit('error', {'message': 'Statut vide.'})
+        return
+    client_status = new_status
+    if connected and client_socket:
+        try:
+            client_socket.send(f"__CLIENT_STATUS__:{new_status}\n".encode('utf-8'))
+        except Exception as e:
+            emit('error', {'message': f'Impossible de changer le statut: {e}'})
+    emit('status_changed', {'status': new_status})
 
 @socketio.on('send_message')
 def handle_send_message(data):

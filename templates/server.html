@@ -112,6 +112,7 @@
                         <div class="badge-text">
                             <span>Serveur</span>
                             <strong id="server-username-display"></strong>
+                            <span class="status-text" id="server-status-display">Disponible</span>
                         </div>
                     </div>
                 </div>
@@ -411,6 +412,36 @@
                 if (el && data.username) el.textContent = data.username;
             });
 
+            // Statut du serveur mis à jour
+            socket.on('server_status_updated', (data) => {
+                const el = document.getElementById('server-status-display');
+                if (el && data.status) {
+                    el.textContent = data.status;
+                    updateStatusIndicator(data.status);
+                }
+            });
+
+            // Statut d'un client changé
+            socket.on('client_status_changed', (data) => {
+                const item = document.getElementById(`client-${data.client_id}`);
+                if (item) {
+                    const statusEl = item.querySelector('.client-status');
+                    if (statusEl) {
+                        statusEl.textContent = data.status;
+                        statusEl.className = `client-status status-${getStatusClass(data.status)}`;
+                    }
+                }
+                if (clientConversations[data.client_id]) {
+                    clientConversations[data.client_id].push({
+                        type: 'system',
+                        message: `Statut: ${data.status}`
+                    });
+                }
+                if (selectedClient === data.client_id) {
+                    addMessageToDisplay('Système', `${data.username} est maintenant ${data.status}`, 'system');
+                }
+            });
+
             // Message reçu
             socket.on('message_received', (data) => {
                 // Initialiser la conversation si elle n'existe pas
@@ -567,8 +598,8 @@
                 <div class="client-info">
                     <div class="client-name">${username}</div>
                     <div class="client-address">${address}</div>
+                    <div class="client-status status-disponible">Disponible</div>
                 </div>
-                <div class="client-status"></div>
                 <span class="notification-badge" id="badge-${clientId}" style="display: none;">0</span>
             `;
             clientsList.appendChild(clientElement);
@@ -896,6 +927,24 @@
             const count = document.querySelectorAll('.client-item').length;
             document.getElementById('client-count').textContent = count;
             document.querySelector('#active-connections strong').textContent = count;
+        }
+
+        // Convertir le statut en classe CSS
+        function getStatusClass(status) {
+            const statusMap = {
+                'Disponible': 'disponible',
+                'Occupé': 'occupe',
+                'En pause': 'pause'
+            };
+            return statusMap[status] || 'disponible';
+        }
+
+        // Mettre à jour l'indicateur de statut du serveur
+        function updateStatusIndicator(status) {
+            const statusDot = document.querySelector('.server-badge .status-dot');
+            if (statusDot) {
+                statusDot.className = 'status-dot status-' + getStatusClass(status);
+            }
         }
 
         // Auto-resize textarea

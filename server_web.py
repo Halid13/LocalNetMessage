@@ -16,6 +16,7 @@ HOST = '0.0.0.0'
 PORT = 12345
 
 server_username = 'Serveur'
+server_status = 'Disponible'
 
 EXIT_KEYWORDS = [
     'quit', 'exit', 'au revoir', 'aurevoir', 'à plus', 'a plus',
@@ -60,8 +61,9 @@ def handle_client(client_socket, client_address, client_id):
 
     try:
         client_socket.send(f"__SERVER_NAME__:{server_username}\n".encode('utf-8'))
+        client_socket.send(f"__SERVER_STATUS__:{server_status}\n".encode('utf-8'))
     except Exception as e:
-        print(f"[AVERTISSEMENT] Impossible d'envoyer le nom du serveur au client {client_id}: {e}")
+        print(f"[AVERTISSEMENT] Impossible d'envoyer les infos du serveur au client {client_id}: {e}")
     
     socketio.emit('client_connected', {
         'client_id': client_id,
@@ -96,6 +98,18 @@ def handle_client(client_socket, client_address, client_id):
                         'client_id': client_id,
                         'address': address_str,
                         'username': new_name
+                    })
+                    continue
+
+                if line.startswith("__CLIENT_STATUS__:"):
+                    new_status = line.split(":",1)[1].strip()
+                    if client_id in clients:
+                        clients[client_id]['status'] = new_status
+                    socketio.emit('client_status_changed', {
+                        'client_id': client_id,
+                        'address': address_str,
+                        'username': username,
+                        'status': new_status
                     })
                     continue
 
@@ -266,6 +280,31 @@ def set_server_username():
         return jsonify({'success': True, 'username': server_username})
     else:
         return jsonify({'success': False, 'error': 'Nom d\'utilisateur invalide'}), 400
+
+@app.route('/set_server_status', methods=['POST'])
+def set_server_status():
+    """Définir le statut du serveur"""
+    global server_status
+    
+    data = request.get_json()
+    status = data.get('status', '').strip()
+    
+    if status:
+        server_status = status
+        print(f'[SERVEUR] Statut défini: {server_status}')
+        # Notifier tous les clients TCP
+        for cid, cdata in list(clients.items()):
+            sock = cdata.get('socket')
+            try:
+                if sock:
+                    sock.send(f"__SERVER_STATUS__:{server_status}\n".encode('utf-8'))
+            except Exception as e:
+                print(f"[AVERTISSEMENT] Impossible d'envoyer le nouveau statut au client {cid}: {e}")
+        # Notifier l'UI web
+        socketio.emit('server_status_updated', {'status': server_status})
+        return jsonify({'success': True, 'status': server_status})
+    else:
+        return jsonify({'success': False, 'error': 'Statut invalide'}), 400
 
 @socketio.on('connect')
 def handle_connect():

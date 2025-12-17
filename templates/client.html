@@ -182,6 +182,7 @@
                     <div class="server-details">
                         <h2>Serveur</h2>
                         <span class="server-address" id="server-address-display"></span>
+                        <span class="server-status" id="server-status-display">Disponible</span>
                     </div>
                 </div>
                 <div class="chat-actions">
@@ -338,6 +339,23 @@
                     label.textContent = data.username;
                 });
                 addSystemMessage(`Le serveur a changé son nom en ${data.username}`);
+            }
+        });
+
+        socket.on('server_status_updated', (data) => {
+            if (data.status) {
+                const statusEl = document.getElementById('server-status-display');
+                if (statusEl) {
+                    statusEl.textContent = data.status;
+                    statusEl.className = 'server-status status-' + getStatusClass(data.status);
+                }
+                addSystemMessage(`Le serveur est maintenant ${data.status}`);
+            }
+        });
+
+        socket.on('status_changed', (data) => {
+            if (data.status) {
+                addSystemMessage(`Votre statut a été changé en ${data.status}`);
             }
         });
 
@@ -747,6 +765,16 @@
             
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // Convertir le statut en classe CSS
+        function getStatusClass(status) {
+            const statusMap = {
+                'Disponible': 'disponible',
+                'Occupé': 'occupe',
+                'En pause': 'pause'
+            };
+            return statusMap[status] || 'disponible';
         }
         
         // Mettre à jour le statut de lecture

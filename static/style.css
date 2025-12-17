@@ -449,11 +449,73 @@ body {
 }
 
 .client-status {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #48bb78;
-    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-tertiary);
+    margin-top: 2px;
+}
+
+.client-status.status-disponible {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.client-status.status-occupe {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.client-status.status-pause {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.server-status {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-tertiary);
+    margin-top: 4px;
+    display: inline-block;
+}
+
+.server-status.status-disponible {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.server-status.status-occupe {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.server-status.status-pause {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.status-dot.status-disponible {
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.status-dot.status-occupe {
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.status-dot.status-pause {
+    background: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.status-text {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-left: 4px;
 }
 
 /* Notification Badge */
