@@ -1,0 +1,49 @@
+/* Floating Profile Button */
+.profile-btn {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 8px 20px rgba(102,126,234,.35);
+  border: none;
+  cursor: pointer;
+  z-index: 1000;
+}
+.profile-btn:hover { transform: translateY(-1px); }
+
+/* Modal */
+.profile-modal { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; z-index: 1000; }
+.profile-modal.open { display: block; }
+.profile-modal-content {
+  position: absolute; right: 20px; bottom: 150px; width: 360px;
+  background: rgba(255,255,255,.9); backdrop-filter: blur(10px);
+  border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,.15);
+  padding: 16px; color: #232323;
+}
+:root.dark .profile-modal-content { background: rgba(20,20,25,.9); color: #e8e8f0; }
+
+.profile-header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; }
+.profile-title { font-weight: 600; }
+.profile-close { background: transparent; border: none; font-size: 18px; cursor: pointer; color: inherit; }
+
+.profile-row { display:flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.profile-label { font-size: 12px; opacity: .8; }
+.profile-input, .profile-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,.08); background: rgba(255,255,255,.85); color: inherit; }
+:root.dark .profile-input, :root.dark .profile-select { background: rgba(30,30,35,.85); border-color: rgba(255,255,255,.08); }
+
+.profile-actions { display:flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.profile-btn-secondary, .profile-btn-primary { padding: 10px 14px; border-radius: 10px; border: none; cursor: pointer; }
+.profile-btn-secondary { background: rgba(0,0,0,.06); }
+.profile-btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+
+.profile-avatar-preview { width: 40px; height: 40px; border-radius: 50%; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,.06); font-size: 20px; overflow:hidden; }
+.profile-avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+.profile-row-inline { display:flex; gap: 8px; align-items: center; }
