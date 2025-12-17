@@ -103,6 +103,7 @@ def handle_client(client_socket, client_address, client_id):
 
                 if line.startswith("__CLIENT_STATUS__:"):
                     new_status = line.split(":",1)[1].strip()
+                    print(f"[INFO] Client {client_id} ({username}) change de statut: {new_status}")
                     if client_id in clients:
                         clients[client_id]['status'] = new_status
                     socketio.emit('client_status_changed', {
@@ -111,6 +112,7 @@ def handle_client(client_socket, client_address, client_id):
                         'username': username,
                         'status': new_status
                     })
+                    print(f"[INFO] Événement client_status_changed émis pour client {client_id}")
                     continue
 
                 if line.startswith("__FILE__|"):

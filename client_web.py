@@ -41,93 +41,92 @@ message_counter = 0
 
 def receive_messages():
     """Thread pour recevoir les messages du serveur"""
-    global client_socket, connected
+    global client_socket, connected, server_display_name, server_status
     buffer = ""
     try:
-        while connected:
-            if client_socket:
-                try:
-                    chunk = client_socket.recv(1024)
-                    if not chunk:
-                        print("[DÉCONNEXION] Le serveur a fermé la connexion.")
-                        socketio.emit('disconnected', {'reason': 'Serveur déconnecté'})
-                        connected = False
-                        break
+        with app.app_context():
+            while connected:
+                if client_socket:
                     try:
-                        text = chunk.decode('utf-8')
-                    except UnicodeDecodeError:
-                        continue
-                    buffer += text
-                    while '\n' in buffer:
-                        line, buffer = buffer.split('\n', 1)
-                        line = line.strip()
-                        if not line:
-                            continue
-                        if line.startswith("__SERVER_NAME__:"):
-                            global server_display_name
-                            server_display_name = line.split(":", 1)[1].strip() or 'Serveur'
-                            print(f"[INFO] Nom du serveur défini: {server_display_name}")
-                            socketio.emit('server_username_updated', {'username': server_display_name})
-                            continue
-                        if line.startswith("__SERVER_STATUS__:"):
-                            global server_status
-                            server_status = line.split(":", 1)[1].strip() or 'Disponible'
-                            print(f"[INFO] Statut du serveur défini: {server_status}")
-                            socketio.emit('server_status_updated', {'status': server_status})
-                            continue
-                        if line.startswith("__FILE__|"):
-                            try:
-                                _, filename, mimetype, size_str, b64 = line.split('|', 4)
-                                data = base64.b64decode(b64.encode('utf-8'))
-                                filename = os.path.basename(filename)
-                                save_path = CLIENT_RECEIVED_DIR / filename
-                                with open(save_path, 'wb') as f:
-                                    f.write(data)
-                                
-                                timestamp = datetime.now().isoformat()
-                                
-                                # Sauvegarder dans SQLite
-                                db.save_file(
-                                    1,  # Client ID (constant: 1 pour le client local)
-                                    filename,
-                                    mimetype,
-                                    len(data),
-                                    'received',
-                                    server_display_name,
-                                    str(save_path),
-                                    timestamp
-                                )
-                                
-                                socketio.emit('file_received', {
-                                    'filename': filename,
-                                    'mimetype': mimetype,
-                                    'size': len(data),
-                                    'url': f"/files/client/received/{filename}",
-                                    'server_username': server_display_name
-                                })
-                            except Exception as e:
-                                print(f"[ERREUR] Réception de fichier: {e}")
-                            continue
-                        socketio.emit('message_received', {
-                            'message': line,
-                            'server_username': server_display_name
-                        })
-                        
-                        # Sauvegarder dans SQLite
-                        timestamp = datetime.now().isoformat()
-                        db.save_message(1, 'received', server_display_name, line, timestamp)
-                        
-                        if line.lower() in EXIT_KEYWORDS:
-                            print("[DÉCONNEXION] Le serveur a terminé la conversation.")
-                            socketio.emit('disconnected', {'reason': 'Serveur a terminé la conversation'})
+                        chunk = client_socket.recv(1024)
+                        if not chunk:
+                            print("[DÉCONNEXION] Le serveur a fermé la connexion.")
+                            socketio.emit('disconnected', {'reason': 'Serveur déconnecté'})
                             connected = False
                             break
-                
-                except Exception as e:
-                    if connected:
-                        print(f"[ERREUR] Erreur de réception: {e}")
-                        socketio.emit('error', {'message': f'Erreur de réception: {str(e)}'})
-                    break
+                        try:
+                            text = chunk.decode('utf-8')
+                        except UnicodeDecodeError:
+                            continue
+                        buffer += text
+                        while '\n' in buffer:
+                            line, buffer = buffer.split('\n', 1)
+                            line = line.strip()
+                            if not line:
+                                continue
+                            if line.startswith("__SERVER_NAME__:"):
+                                server_display_name = line.split(":", 1)[1].strip() or 'Serveur'
+                                print(f"[INFO] Nom du serveur défini: {server_display_name}")
+                                socketio.emit('server_username_updated', {'username': server_display_name})
+                                continue
+                            if line.startswith("__SERVER_STATUS__:"):
+                                server_status = line.split(":", 1)[1].strip() or 'Disponible'
+                                print(f"[INFO] Statut du serveur défini: {server_status}")
+                                socketio.emit('server_status_updated', {'status': server_status})
+                                continue
+                            if line.startswith("__FILE__|"):
+                                try:
+                                    _, filename, mimetype, size_str, b64 = line.split('|', 4)
+                                    data = base64.b64decode(b64.encode('utf-8'))
+                                    filename = os.path.basename(filename)
+                                    save_path = CLIENT_RECEIVED_DIR / filename
+                                    with open(save_path, 'wb') as f:
+                                        f.write(data)
+                                    
+                                    timestamp = datetime.now().isoformat()
+                                    
+                                    # Sauvegarder dans SQLite
+                                    db.save_file(
+                                        1,  # Client ID (constant: 1 pour le client local)
+                                        filename,
+                                        mimetype,
+                                        len(data),
+                                        'received',
+                                        server_display_name,
+                                        str(save_path),
+                                        timestamp
+                                    )
+                                    
+                                    socketio.emit('file_received', {
+                                        'filename': filename,
+                                        'mimetype': mimetype,
+                                        'size': len(data),
+                                        'url': f"/files/client/received/{filename}",
+                                        'server_username': server_display_name
+                                    })
+                                except Exception as e:
+                                    print(f"[ERREUR] Réception de fichier: {e}")
+                                continue
+                            socketio.emit('message_received', {
+                                'message': line,
+                                'server_username': server_display_name
+                            })
+                            
+                            # Sauvegarder dans SQLite
+                            timestamp = datetime.now().isoformat()
+                            db.save_message(1, 'received', server_display_name, line, timestamp)
+                            
+                            if line.lower() in EXIT_KEYWORDS:
+                                print("[DÉCONNEXION] Le serveur a terminé la conversation.")
+                                socketio.emit('disconnected', {'reason': 'Serveur a terminé la conversation'})
+                                connected = False
+                                break
+                    
+                    except Exception as e:
+                        if connected:
+                            print(f"[ERREUR] Erreur de réception: {e}")
+                            socketio.emit('error', {'message': f'Erreur de réception: {str(e)}'})
+                        break
     
     except Exception as e:
         print(f"[ERREUR] Thread de réception: {e}")
@@ -218,15 +217,22 @@ def handle_change_status(data):
     """Changer le statut côté client et notifier le serveur TCP"""
     global client_socket, connected, client_status
     new_status = data.get('status', '').strip()
+    print(f"[DEBUG] change_status reçu: {new_status}, connected: {connected}")
     if not new_status:
         emit('error', {'message': 'Statut vide.'})
         return
     client_status = new_status
     if connected and client_socket:
         try:
-            client_socket.send(f"__CLIENT_STATUS__:{new_status}\n".encode('utf-8'))
+            message = f"__CLIENT_STATUS__:{new_status}\n"
+            print(f"[DEBUG] Envoi au serveur TCP: {message.strip()}")
+            client_socket.send(message.encode('utf-8'))
+            print(f"[INFO] Statut client changé et envoyé au serveur: {new_status}")
         except Exception as e:
+            print(f"[ERREUR] Impossible de changer le statut: {e}")
             emit('error', {'message': f'Impossible de changer le statut: {e}'})
+    else:
+        print(f"[AVERTISSEMENT] Non connecté, impossible d'envoyer le statut")
     emit('status_changed', {'status': new_status})
 
 @socketio.on('send_message')

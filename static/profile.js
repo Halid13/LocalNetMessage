@@ -164,11 +164,22 @@
       }
       
       // Emit status change if status changed
-      if (!isServer && oldStatus !== p.status && window.socket) {
-        try { window.socket.emit('change_status', {status: p.status || 'Disponible'}); } catch (e) { console.warn('Could not emit change_status:', e); }
-      } else if (isServer && oldStatus !== p.status) {
-        // Server status change
-        try { fetch('/set_server_status', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: p.status || 'Disponible'})}); } catch (e) { console.warn('Could not set server status:', e); }
+      if (!isServer && oldStatus !== p.status && window.socket && p.status) {
+        try { 
+          console.log('Émission change_status:', p.status);
+          window.socket.emit('change_status', {status: p.status || 'Disponible'}); 
+        } catch (e) { 
+          console.warn('Could not emit change_status:', e); 
+        }
+      }
+      
+      // Server status change
+      if (isServer && oldStatus !== p.status && p.status) {
+        try { 
+          fetch('/set_server_status', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: p.status || 'Disponible'})}); 
+        } catch (e) { 
+          console.warn('Could not set server status:', e); 
+        }
       }
       
       close();

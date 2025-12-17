@@ -274,6 +274,7 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
         let socket = io('http://localhost:5001');  // Connexion Socket.IO dès le chargement
+        window.socket = socket;  // Rendre socket accessible globalement
         let isConnected = false;
         const messageInput = document.getElementById('message-input');
         const messagesContainer = document.getElementById('messages');
