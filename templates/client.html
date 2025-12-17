@@ -321,6 +321,33 @@
             updateConnectionStatus(false);
         });
 
+        socket.on('user_renamed', (data) => {
+            if (data.username) {
+                addSystemMessage(`Vous avez changé votre nom en ${data.username}`);
+            }
+        });
+
+        socket.on('server_username_updated', (data) => {
+            if (data.username) {
+                // Update server name display in chat header
+                const headerEl = document.querySelector('.server-details h2');
+                if (headerEl) headerEl.textContent = data.username;
+                // Update message sender labels
+                const senderLabels = document.querySelectorAll('.message.received .message-sender');
+                senderLabels.forEach((label) => {
+                    label.textContent = data.username;
+                });
+                addSystemMessage(`Le serveur a changé son nom en ${data.username}`);
+            }
+        });
+
+        socket.on('client_renamed', (data) => {
+            // If another client is renamed (multi-client scenario)
+            if (data.username) {
+                addSystemMessage(`Un client a changé son nom en ${data.username}`);
+            }
+        });
+
         socket.on('disconnected', (data) => {
             isConnected = false;
             updateConnectionStatus(false);

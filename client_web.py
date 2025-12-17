@@ -188,6 +188,22 @@ def handle_connect_to_server(data):
             'message': f'Erreur de connexion: {str(e)}'
         })
 
+@socketio.on('rename_user')
+def handle_rename_user(data):
+    """Changer le nom d'utilisateur côté client et notifier le serveur TCP"""
+    global client_socket, connected, username
+    new_name = data.get('username', '').strip()
+    if not new_name:
+        emit('error', {'message': 'Nom utilisateur vide.'})
+        return
+    username = new_name
+    if connected and client_socket:
+        try:
+            client_socket.send(f"__CLIENT_NAME__:{new_name}\n".encode('utf-8'))
+        except Exception as e:
+            emit('error', {'message': f'Impossible de changer le nom: {e}'})
+    emit('user_renamed', {'username': new_name})
+
 @socketio.on('send_message')
 def handle_send_message(data):
     """Envoyer un message au serveur"""

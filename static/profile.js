@@ -18,7 +18,7 @@
   }
   function saveProfile(p){ localStorage.setItem(storageKey, JSON.stringify(p)); }
 
-  function applyProfile(p){
+  function applyProfile(p, updateBackend = false){
     // Theme
     if (typeof window.setTheme === 'function') {
       window.setTheme(p.theme);
@@ -34,8 +34,8 @@
     if (isServer) {
       const nameEl = document.getElementById('server-username-display');
       if (nameEl && p.displayName) nameEl.textContent = p.displayName;
-      // Update backend name
-      if (p.displayName) {
+      // Update backend name only when explicitly saving
+      if (updateBackend && p.displayName) {
         try { fetch('/set_server_username', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username: p.displayName})}); } catch {}
       }
     } else {
@@ -144,13 +144,20 @@
 
     content.querySelector('#profile-save').addEventListener('click', ()=>{
       const p = loadProfile();
+      const oldName = p.displayName;
       p.displayName = content.querySelector('#profile-displayName').value.trim();
       p.status = content.querySelector('#profile-status').value.trim();
       p.avatar = content.querySelector('#profile-avatar').value.trim() || '🙂';
       p.theme = content.querySelector('#profile-theme').value;
       p.encryptionDefault = content.querySelector('#profile-encryption').checked;
       saveProfile(p);
-      applyProfile(p);
+      applyProfile(p, true); // updateBackend = true when explicitly saving
+      
+      // If client-side, emit rename_user if name changed
+      if (!isServer && oldName !== p.displayName && p.displayName && window.socket) {
+        try { window.socket.emit('rename_user', {username: p.displayName}); } catch (e) { console.warn('Could not emit rename_user:', e); }
+      }
+      
       close();
     });
   }

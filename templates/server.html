@@ -357,6 +357,34 @@
                 });
             });
 
+            // Client renommé
+            socket.on('client_renamed', (data) => {
+                const item = document.getElementById(`client-${data.client_id}`);
+                if (item) {
+                    const nameEl = item.querySelector('.client-name');
+                    if (nameEl) nameEl.textContent = data.username;
+                }
+                if (clientConversations[data.client_id]) {
+                    clientConversations[data.client_id].push({
+                        type: 'system',
+                        message: `Nom mis à jour: ${data.username}`
+                    });
+                }
+                if (selectedClient === data.client_id) {
+                    // Mettre à jour le header
+                    updateSelectedClient();
+                    
+                    // Mettre à jour les messages reçus de ce client dans la conversation affichée
+                    const receivedMessages = messagesContainer.querySelectorAll('.message.received .message-sender');
+                    receivedMessages.forEach((senderEl) => {
+                        senderEl.textContent = data.username;
+                    });
+                    
+                    // Ajouter un message système
+                    addMessageToDisplay('Système', `${data.username} a changé son nom.`, 'system');
+                }
+            });
+
             // Client déconnecté
             socket.on('client_disconnected', (data) => {
                 // Ajouter un message système dans sa conversation
@@ -375,6 +403,12 @@
                     updateSelectedClient();
                     showWelcomeMessage();
                 }
+            });
+
+            // Nom du serveur mis à jour
+            socket.on('server_username_updated', (data) => {
+                const el = document.getElementById('server-username-display');
+                if (el && data.username) el.textContent = data.username;
             });
 
             // Message reçu
@@ -629,6 +663,15 @@
                 `;
                 messageInput.disabled = true;
                 sendBtn.disabled = true;
+            } else {
+                // Mettre à jour le nom du client sélectionné dans le header
+                const clientElement = document.getElementById(`client-${selectedClient}`);
+                if (clientElement) {
+                    const username = clientElement.querySelector('.client-name').textContent;
+                    document.getElementById('selected-client').innerHTML = `
+                        <span>Répondre à: <strong>${username}</strong></span>
+                    `;
+                }
             }
         }
 

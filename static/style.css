@@ -114,15 +114,16 @@ body {
 .server-header {
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-sm);
     padding: var(--spacing-lg) var(--spacing-xl);
 }
 
 .header-main {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr auto;
-    gap: var(--spacing-lg);
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
 }
 
 .header-content {
@@ -184,13 +185,15 @@ body {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
+    flex: 1;
+    min-width: 280px;
 }
 
 .server-header .header-center {
     display: flex;
+    align-items: center;
     gap: var(--spacing-sm);
     flex-wrap: wrap;
-    justify-content: flex-start;
 }
 
 .server-header .info-chip {
@@ -213,6 +216,7 @@ body {
     align-items: center;
     gap: var(--spacing-sm);
     justify-content: flex-end;
+    min-width: 220px;
 }
 
 .server-header .btn-icon {

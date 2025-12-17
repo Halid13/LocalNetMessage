@@ -86,6 +86,19 @@ def handle_client(client_socket, client_address, client_id):
                 line = line.strip()
                 if not line:
                     continue
+                if line.startswith("__CLIENT_NAME__:"):
+                    new_name = line.split(":",1)[1].strip() or f"Client_{client_id}"
+                    username = new_name
+                    if client_id in clients:
+                        clients[client_id]['username'] = new_name
+                    db.update_client_history(client_id, new_name, address_str)
+                    socketio.emit('client_renamed', {
+                        'client_id': client_id,
+                        'address': address_str,
+                        'username': new_name
+                    })
+                    continue
+
                 if line.startswith("__FILE__|"):
                     try:
                         _, filename, mimetype, size_str, b64 = line.split('|', 4)
@@ -240,6 +253,16 @@ def set_server_username():
     if username and len(username) >= 2:
         server_username = username
         print(f'[SERVEUR] Nom d\'utilisateur défini: {server_username}')
+        # Notifier tous les clients TCP
+        for cid, cdata in list(clients.items()):
+            sock = cdata.get('socket')
+            try:
+                if sock:
+                    sock.send(f"__SERVER_NAME__:{server_username}\n".encode('utf-8'))
+            except Exception as e:
+                print(f"[AVERTISSEMENT] Impossible d'envoyer le nouveau nom au client {cid}: {e}")
+        # Notifier l'UI web
+        socketio.emit('server_username_updated', {'username': server_username})
         return jsonify({'success': True, 'username': server_username})
     else:
         return jsonify({'success': False, 'error': 'Nom d\'utilisateur invalide'}), 400
