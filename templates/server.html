@@ -300,6 +300,17 @@
                     socket = io();
                     initializeSocketEvents();
                     
+                    // Gestion de la touche Entrée pour envoyer les messages
+                    messageInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage();
+                        }
+                    });
+                    
+                    // Auto-resize du textarea
+                    messageInput.addEventListener('input', autoResize);
+                    
                     console.log('Interface serveur initialisée avec succès');
                 }
             })
@@ -836,16 +847,6 @@
             messageInput.style.height = 'auto';
             messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
         }
-
-        messageInput.addEventListener('input', autoResize);
-
-        // Gestion des touches
-        messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
 
         // Escape HTML
         function escapeHtml(text) {
