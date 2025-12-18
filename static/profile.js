@@ -34,10 +34,19 @@
       if (updateBackend && p.displayName) {
         try { fetch('/set_server_username', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username: p.displayName})}); } catch {}
       }
+      if (updateBackend && p.avatar) {
+        try { fetch('/set_server_avatar', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({avatar: p.avatar})}); } catch {}
+      }
     } else {
       const userInput = document.getElementById('username');
       if (userInput && p.displayName && !userInput.value) userInput.value = p.displayName;
+      if (updateBackend && p.avatar && window.socket) {
+        try { window.socket.emit('change_avatar', {avatar: p.avatar}); } catch {}
+      }
     }
+    
+    // Toujours sauvegarder le profil dans localStorage après application
+    saveProfile(p);
     const headerAvatar = document.querySelector('.server-avatar, .logo-wrapper');
     if (headerAvatar) {
       headerAvatar.setAttribute('data-avatar', p.avatar);
@@ -46,6 +55,21 @@
     // Expose to window and notify listeners
     try { window.currentProfile = p; } catch {}
     try { window.dispatchEvent(new CustomEvent('profile-updated', { detail: p })); } catch {}
+    
+    // Update profile button with avatar
+    updateProfileButtonDisplay(p.avatar);
+  }
+
+  function updateProfileButtonDisplay(avatar) {
+    const btn = document.getElementById('profile-btn');
+    if (!btn) return;
+    if (avatar && (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:image/'))) {
+      btn.innerHTML = `<img src="${avatar}" alt="profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+    } else if (avatar && avatar.length <= 4 && /\p{Emoji}/u.test(avatar)) {
+      btn.textContent = avatar;
+    } else {
+      btn.textContent = '👤';
+    }
   }
 
   function createUI(){
@@ -212,7 +236,9 @@
       document.head.appendChild(link);
     }
     createUI();
-    applyProfile(loadProfile());
+    const profile = loadProfile();
+    applyProfile(profile);
+    updateProfileButtonDisplay(profile.avatar);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

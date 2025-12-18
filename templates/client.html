@@ -349,6 +349,27 @@
             }
         });
 
+        socket.on('server_avatar_updated', (data) => {
+            if (data.avatar) {
+                // Mettre à jour le localStorage du serveur
+                const serverProfile = JSON.parse(localStorage.getItem('serverProfile') || '{"avatar":"🙂"}');
+                serverProfile.avatar = data.avatar;
+                localStorage.setItem('serverProfile', JSON.stringify(serverProfile));
+                updateProfileButton(data.avatar);
+                addSystemMessage(`L'avatar du serveur a été changé`);
+            }
+        });
+
+        socket.on('avatar_changed', (data) => {
+            if (data.avatar) {
+                // Mettre à jour le localStorage du client
+                const clientProfile = JSON.parse(localStorage.getItem('clientProfile') || '{"avatar":"🙂"}');
+                clientProfile.avatar = data.avatar;
+                localStorage.setItem('clientProfile', JSON.stringify(clientProfile));
+                addSystemMessage(`Votre avatar a été changé`);
+            }
+        });
+
         socket.on('status_changed', (data) => {
             if (data.status) {
                 addSystemMessage(`Votre statut a été changé en ${data.status}`);
@@ -754,6 +775,19 @@
                 'En pause': 'pause'
             };
             return statusMap[status] || 'disponible';
+        }
+
+        // Mettre à jour le bouton profil avec l'avatar
+        function updateProfileButton(avatar) {
+            const btn = document.getElementById('profile-btn');
+            if (!btn) return;
+            if (avatar && (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:image/'))) {
+                btn.innerHTML = `<img src="${avatar}" alt="profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+            } else if (avatar && avatar.length <= 4 && /\p{Emoji}/u.test(avatar)) {
+                btn.textContent = avatar;
+            } else {
+                btn.textContent = '👤';
+            }
         }
         
         function updateReadStatus(messageId, status) {

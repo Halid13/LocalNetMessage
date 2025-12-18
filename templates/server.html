@@ -399,6 +399,16 @@
                 }
             });
 
+            socket.on('server_avatar_updated', (data) => {
+                if (data.avatar) {
+                    // Mettre à jour le localStorage du serveur
+                    const serverProfile = JSON.parse(localStorage.getItem('serverProfile') || '{"avatar":"🙂"}');
+                    serverProfile.avatar = data.avatar;
+                    localStorage.setItem('serverProfile', JSON.stringify(serverProfile));
+                    updateServerProfileButton(data.avatar);
+                }
+            });
+
             socket.on('client_status_changed', (data) => {
                 const item = document.getElementById(`client-${data.client_id}`);
                 if (item) {
@@ -416,6 +426,26 @@
                 }
                 if (selectedClient === data.client_id) {
                     addMessageToDisplay('Système', `${data.username} est maintenant ${data.status}`, 'system');
+                }
+            });
+
+            socket.on('client_avatar_changed', (data) => {
+                // Mettre à jour les clients disponibles
+                if (clients[data.client_id]) {
+                    clients[data.client_id].avatar = data.avatar;
+                }
+                
+                // Ajouter dans l'historique
+                if (clientConversations[data.client_id]) {
+                    clientConversations[data.client_id].push({
+                        type: 'system',
+                        message: `Avatar mis à jour`
+                    });
+                }
+                
+                // Si ce client est actuellement sélectionné, afficher le changement
+                if (selectedClient === data.client_id) {
+                    addMessageToDisplay('Système', `${data.username} a changé d'avatar`, 'system');
                 }
             });
 
@@ -898,6 +928,25 @@
             }
         }
 
+        function updateServerProfileButton() {
+            const profileBtn = document.querySelector('.server-badge button[title="Profil"]');
+            if (!profileBtn) return;
+            
+            const serverProfile = JSON.parse(localStorage.getItem('serverProfile') || '{"avatar":"🙂"}');
+            const avatar = serverProfile.avatar || '🙂';
+            
+            // Check if it's a data URL or image URL
+            if (avatar.startsWith('data:image/') || avatar.startsWith('http://') || avatar.startsWith('https://')) {
+                // Create and display image
+                profileBtn.innerHTML = `<img src="${avatar}" alt="Avatar" style="width: 20px; height: 20px; object-fit: cover; border-radius: 50%; display: block;">`;
+                profileBtn.style.padding = '2px';
+            } else {
+                // Display emoji
+                profileBtn.textContent = avatar;
+                profileBtn.style.padding = '5px 8px';
+            }
+        }
+
         function autoResize() {
             messageInput.style.height = 'auto';
             messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
@@ -1003,6 +1052,7 @@
             }
             
             initColorTheme();
+            updateServerProfileButton();
             
             const savedColorTheme = localStorage.getItem('colorTheme') || 'violet';
             setTheme(savedColorTheme);

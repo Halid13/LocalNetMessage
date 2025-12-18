@@ -36,12 +36,14 @@ receive_thread = None
 username = None
 server_display_name = 'Serveur'
 server_status = 'Disponible'
+server_avatar = '🙂'
 client_status = 'Disponible'
+client_avatar = '🙂'
 message_counter = 0
 
 def receive_messages():
     """Thread pour recevoir les messages du serveur"""
-    global client_socket, connected, server_display_name, server_status
+    global client_socket, connected, server_display_name, server_status, server_avatar
     buffer = ""
     try:
         with app.app_context():
@@ -73,6 +75,11 @@ def receive_messages():
                                 server_status = line.split(":", 1)[1].strip() or 'Disponible'
                                 print(f"[INFO] Statut du serveur défini: {server_status}")
                                 socketio.emit('server_status_updated', {'status': server_status})
+                                continue
+                            if line.startswith("__SERVER_AVATAR__:"):
+                                server_avatar = line.split(":", 1)[1].strip() or '🙂'
+                                print(f"[INFO] Avatar du serveur défini")
+                                socketio.emit('server_avatar_updated', {'avatar': server_avatar})
                                 continue
                             if line.startswith("__FILE__|"):
                                 try:
@@ -234,6 +241,29 @@ def handle_change_status(data):
     else:
         print(f"[AVERTISSEMENT] Non connecté, impossible d'envoyer le statut")
     emit('status_changed', {'status': new_status})
+
+@socketio.on('change_avatar')
+def handle_change_avatar(data):
+    """Changer l'avatar côté client et notifier le serveur TCP"""
+    global client_socket, connected, client_avatar
+    new_avatar = data.get('avatar', '').strip()
+    print(f"[DEBUG] change_avatar reçu, connected: {connected}")
+    if not new_avatar:
+        emit('error', {'message': 'Avatar vide.'})
+        return
+    client_avatar = new_avatar
+    if connected and client_socket:
+        try:
+            message = f"__CLIENT_AVATAR__:{new_avatar}\n"
+            print(f"[DEBUG] Envoi avatar au serveur TCP")
+            client_socket.send(message.encode('utf-8'))
+            print(f"[INFO] Avatar client changé et envoyé au serveur")
+        except Exception as e:
+            print(f"[ERREUR] Impossible de changer l'avatar: {e}")
+            emit('error', {'message': f'Impossible de changer l\'avatar: {e}'})
+    else:
+        print(f"[AVERTISSEMENT] Non connecté, impossible d'envoyer l'avatar")
+    emit('avatar_changed', {'avatar': new_avatar})
 
 @socketio.on('send_message')
 def handle_send_message(data):

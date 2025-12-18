@@ -17,6 +17,7 @@ PORT = 12345
 
 server_username = 'Serveur'
 server_status = 'Disponible'
+server_avatar = '🙂'
 
 EXIT_KEYWORDS = [
     'quit', 'exit', 'au revoir', 'aurevoir', 'à plus', 'a plus',
@@ -62,6 +63,7 @@ def handle_client(client_socket, client_address, client_id):
     try:
         client_socket.send(f"__SERVER_NAME__:{server_username}\n".encode('utf-8'))
         client_socket.send(f"__SERVER_STATUS__:{server_status}\n".encode('utf-8'))
+        client_socket.send(f"__SERVER_AVATAR__:{server_avatar}\n".encode('utf-8'))
     except Exception as e:
         print(f"[AVERTISSEMENT] Impossible d'envoyer les infos du serveur au client {client_id}: {e}")
     
@@ -113,6 +115,20 @@ def handle_client(client_socket, client_address, client_id):
                         'status': new_status
                     })
                     print(f"[INFO] Événement client_status_changed émis pour client {client_id}")
+                    continue
+
+                if line.startswith("__CLIENT_AVATAR__:"):
+                    new_avatar = line.split(":",1)[1].strip()
+                    print(f"[INFO] Client {client_id} ({username}) change d'avatar")
+                    if client_id in clients:
+                        clients[client_id]['avatar'] = new_avatar
+                    socketio.emit('client_avatar_changed', {
+                        'client_id': client_id,
+                        'address': address_str,
+                        'username': username,
+                        'avatar': new_avatar
+                    })
+                    print(f"[INFO] Événement client_avatar_changed émis pour client {client_id}")
                     continue
 
                 if line.startswith("__FILE__|"):
@@ -307,6 +323,31 @@ def set_server_status():
         return jsonify({'success': True, 'status': server_status})
     else:
         return jsonify({'success': False, 'error': 'Statut invalide'}), 400
+
+@app.route('/set_server_avatar', methods=['POST'])
+def set_server_avatar():
+    """Définir l'avatar du serveur"""
+    global server_avatar
+    
+    data = request.get_json()
+    avatar = data.get('avatar', '').strip()
+    
+    if avatar:
+        server_avatar = avatar
+        print(f'[SERVEUR] Avatar défini')
+        # Notifier tous les clients TCP
+        for cid, cdata in list(clients.items()):
+            sock = cdata.get('socket')
+            try:
+                if sock:
+                    sock.send(f"__SERVER_AVATAR__:{avatar}\n".encode('utf-8'))
+            except Exception as e:
+                print(f"[AVERTISSEMENT] Impossible d'envoyer le nouvel avatar au client {cid}: {e}")
+        # Notifier l'UI web
+        socketio.emit('server_avatar_updated', {'avatar': avatar})
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'error': 'Avatar invalide'}), 400
 
 @socketio.on('connect')
 def handle_connect():
