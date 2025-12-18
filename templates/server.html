@@ -656,6 +656,26 @@
             }
         }
 
+        function getServerProfile() {
+            try {
+                const raw = localStorage.getItem('serverProfile');
+                return raw ? JSON.parse(raw) : { avatar: '🙂' };
+            } catch { return { avatar: '🙂' }; }
+        }
+
+        function serverAvatarMarkup(sender, type) {
+            const profile = getServerProfile();
+            const avatar = (type === 'sent' && profile && profile.avatar) ? profile.avatar : '';
+            const initial = sender && sender.charAt ? sender.charAt(0) : '?';
+            if (avatar && (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:image/'))) {
+                return `<div class="message-avatar"><img src="${avatar}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/></div>`;
+            }
+            if (avatar && avatar.length <= 4 && /\p{Emoji}/u.test(avatar)) {
+                return `<div class="message-avatar" style="display:flex;align-items:center;justify-content:center;font-size:14px;">${avatar}</div>`;
+            }
+            return `<div class="message-avatar">${initial}</div>`;
+        }
+
         function addMessageToDisplay(sender, message, type, timestamp, read) {
             const messageElement = document.createElement('div');
             messageElement.className = `message ${type}`;
@@ -675,8 +695,9 @@
                     : '<span class="read-status">✓</span>';
             }
             
+            const avatarHTML = serverAvatarMarkup(sender, type);
             messageElement.innerHTML = `
-                <div class="message-avatar">${sender.charAt(0)}</div>
+                ${avatarHTML}
                 <div class="message-content">
                     <div class="message-header">
                         <span class="message-sender">${sender}</span>
@@ -694,8 +715,9 @@
             const messageElement = document.createElement('div');
             messageElement.className = `message ${type}`;
             const time = new Date().toLocaleString('fr-FR');
+            const avatarHTML = serverAvatarMarkup(sender, type);
             messageElement.innerHTML = `
-                <div class="message-avatar">${sender.charAt(0)}</div>
+                ${avatarHTML}
                 <div class="message-content">
                     <div class="message-header">
                         <span class="message-sender">${sender}</span>

@@ -492,6 +492,27 @@
             autoResize();
         }
 
+        function getLocalProfile() {
+            try {
+                const raw = localStorage.getItem('clientProfile');
+                return raw ? JSON.parse(raw) : { avatar: '🙂' };
+            } catch { return { avatar: '🙂' }; }
+        }
+
+        function avatarMarkup(sender, type) {
+            const profile = getLocalProfile();
+            const avatar = (type === 'sent' && profile && profile.avatar) ? profile.avatar : '';
+            const avatarColor = getAvatarColor(sender);
+            const avatarInitial = sender.charAt(0).toUpperCase();
+            if (avatar && (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:image/'))) {
+                return `<div class="message-avatar modern-avatar"><img src="${avatar}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/></div>`;
+            }
+            if (avatar && avatar.length <= 4 && /\p{Emoji}/u.test(avatar)) {
+                return `<div class="message-avatar modern-avatar" style="display:flex;align-items:center;justify-content:center;font-size:18px;">${avatar}</div>`;
+            }
+            return `<div class="message-avatar modern-avatar" style="background: ${avatarColor};">${avatarInitial}</div>`;
+        }
+
         function addMessage(sender, message, type, messageId = null) {
             const welcomeMsg = messagesContainer.querySelector('.welcome-message, .modern-welcome');
             if (welcomeMsg) welcomeMsg.remove();
@@ -505,15 +526,12 @@
                 messageElement.dataset.messageId = messageId;
             }
             
-            const avatarColor = getAvatarColor(sender);
-            const avatarInitial = sender.charAt(0).toUpperCase();
+            const avatarHTML = avatarMarkup(sender, type);
             
             const readStatus = type === 'sent' ? '<span class="read-status modern-read-status" data-status="sent">✓</span>' : '';
             
             messageElement.innerHTML = `
-                <div class="message-avatar modern-avatar" style="background: ${avatarColor};">
-                    ${avatarInitial}
-                </div>
+                ${avatarHTML}
                 <div class="message-bubble modern-bubble ${type}">
                     <div class="message-header modern-msg-header">
                         <span class="message-sender modern-sender">${sender}</span>
@@ -545,12 +563,9 @@
 
             const messageElement = document.createElement('div');
             messageElement.className = `message modern-message ${type}`;
-            const avatarColor = getAvatarColor(sender);
-            const avatarInitial = sender.charAt(0).toUpperCase();
+            const avatarHTML = avatarMarkup(sender, type);
             messageElement.innerHTML = `
-                <div class="message-avatar modern-avatar" style="background: ${avatarColor};">
-                    ${avatarInitial}
-                </div>
+                ${avatarHTML}
                 <div class="message-bubble modern-bubble ${type}">
                     <div class="message-header modern-msg-header">
                         <span class="message-sender modern-sender">${sender}</span>

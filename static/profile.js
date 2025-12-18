@@ -42,6 +42,10 @@
     if (headerAvatar) {
       headerAvatar.setAttribute('data-avatar', p.avatar);
     }
+
+    // Expose to window and notify listeners
+    try { window.currentProfile = p; } catch {}
+    try { window.dispatchEvent(new CustomEvent('profile-updated', { detail: p })); } catch {}
   }
 
   function createUI(){
@@ -83,8 +87,13 @@
         </select>
       </div>
       <div class="profile-row">
-        <label class="profile-label">Avatar (emoji ou URL d'image)</label>
-        <input id="profile-avatar" class="profile-input" placeholder="🙂 ou https://..." />
+        <label class="profile-label">Avatar (emoji, URL ou photo)</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input id="profile-avatar" class="profile-input" placeholder="🙂 ou https://..." style="flex:1;" />
+          <input id="profile-avatar-file" type="file" accept="image/*" style="display:none;" />
+          <button class="profile-btn-secondary" id="profile-avatar-upload" type="button">Importer</button>
+        </div>
+        <div class="profile-hint" style="font-size:12px; color:#666; margin-top:6px;">Taille conseillée ≤ 256 Ko. Les formats data URL et lien HTTP(S) sont supportés.</div>
       </div>
       <div class="profile-row">
         <label class="profile-label">Thème</label>
@@ -123,18 +132,39 @@
       content.querySelector('#profile-theme').value = p.theme || THEMES[0];
       content.querySelector('#profile-encryption').checked = !!p.encryptionDefault;
       const prev = content.querySelector('#profile-avatar-preview');
-      if (p.avatar && /^https?:\/\//.test(p.avatar)) {
+      if (p.avatar && (/^https?:\/\//.test(p.avatar) || p.avatar.startsWith('data:image/'))) {
         prev.innerHTML = `<img src="${p.avatar}" alt="avatar"/>`;
       } else {
         prev.textContent = p.avatar || '🙂';
       }
     }
 
+    // Saisie directe (emoji ou URL)
     content.querySelector('#profile-avatar').addEventListener('input', (e)=>{
       const v = e.target.value.trim();
       const prev = content.querySelector('#profile-avatar-preview');
-      if (/^https?:\/\//.test(v)) { prev.innerHTML = `<img src="${v}" alt="avatar"/>`; }
+      if ((/^https?:\/\//.test(v)) || v.startsWith('data:image/')) { prev.innerHTML = `<img src="${v}" alt="avatar"/>`; }
       else { prev.textContent = v || '🙂'; }
+    });
+
+    // Import de fichier -> converti en data URL et injecté dans le champ texte
+    const uploadBtn = content.querySelector('#profile-avatar-upload');
+    const uploadInput = content.querySelector('#profile-avatar-file');
+    uploadBtn.addEventListener('click', ()=> uploadInput.click());
+    uploadInput.addEventListener('change', (e)=>{
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { alert('Veuillez sélectionner une image.'); e.target.value=''; return; }
+      if (file.size > 256 * 1024) { alert('Image trop volumineuse (max 256 Ko).'); e.target.value=''; return; }
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const dataUrl = reader.result;
+        content.querySelector('#profile-avatar').value = dataUrl;
+        const prev = content.querySelector('#profile-avatar-preview');
+        prev.innerHTML = `<img src="${dataUrl}" alt="avatar"/>`;
+      };
+      reader.readAsDataURL(file);
+      e.target.value='';
     });
 
     content.querySelector('#profile-save').addEventListener('click', ()=>{
