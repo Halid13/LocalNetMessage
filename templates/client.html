@@ -171,14 +171,7 @@
         <div class="chat-container modern-chat-container client-chat" id="chat-container" style="display: none;">
             <div class="chat-header modern-chat-header">
                 <div class="chat-header-info">
-                    <div class="server-avatar">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/>
-                            <circle cx="6" cy="7" r="0.8" fill="white"/>
-                            <circle cx="6" cy="12" r="0.8" fill="white"/>
-                            <circle cx="6" cy="17" r="0.8" fill="white"/>
-                        </svg>
-                    </div>
+                    <div class="server-avatar" id="server-avatar-header"></div>
                     <div class="server-details">
                         <h2>Serveur</h2>
                         <span class="server-address" id="server-address-display"></span>
@@ -311,6 +304,7 @@
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('server-address-display').textContent = `${data.server_ip}:${data.server_port}`;
             updateConnectionStatus(true);
+            updateServerHeaderAvatar();
             addSystemMessage('Connecté au serveur');
         });
 
@@ -356,6 +350,7 @@
                 serverProfile.avatar = data.avatar;
                 localStorage.setItem('serverProfile', JSON.stringify(serverProfile));
                 updateProfileButton(data.avatar);
+                updateServerHeaderAvatar();
                 addSystemMessage(`L'avatar du serveur a été changé`);
             }
         });
@@ -552,6 +547,19 @@
                 return `<div class="message-avatar modern-avatar" style="display:flex;align-items:center;justify-content:center;font-size:18px;">${avatar}</div>`;
             }
             return `<div class="message-avatar modern-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">${initial}</div>`;
+        }
+
+        function serverAvatarHeaderMarkup() {
+            const profile = getServerProfile();
+            const avatar = (profile && profile.avatar) ? profile.avatar : '🙂';
+            const initial = 'S';
+            if (avatar && (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:image/'))) {
+                return `<img src="${avatar}" alt="avatar" style="width:32px;height:32px;object-fit:cover;border-radius:50%;"/>`;
+            }
+            if (avatar && avatar.length <= 4 && /\p{Emoji}/u.test(avatar)) {
+                return `<span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;font-size:18px;">${avatar}</span>`;
+            }
+            return `<span class="avatar-circle" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;font-weight:600;">${initial}</span>`;
         }
 
         function addMessage(sender, message, type, messageId = null) {
@@ -808,6 +816,12 @@
             } else {
                 btn.textContent = '👤';
             }
+        }
+
+        function updateServerHeaderAvatar() {
+            const el = document.getElementById('server-avatar-header');
+            if (!el) return;
+            el.innerHTML = serverAvatarHeaderMarkup();
         }
         
         function updateReadStatus(messageId, status) {
