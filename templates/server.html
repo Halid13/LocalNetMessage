@@ -332,7 +332,7 @@
             });
 
             socket.on('client_connected', (data) => {
-                addClientToList(data.client_id, data.username, data.address);
+                addClientToList(data.client_id, data.username, data.address, data.avatar, data.status);
                 updateConnectionCount();
                 clientProfiles[data.client_id] = {
                     avatar: data.avatar || '🙂',
@@ -456,6 +456,14 @@
 
                 if (selectedClient === data.client_id) {
                     addSystemMessageToDisplay(`${data.username} a changé d'avatar`);
+                }
+
+                const item = document.getElementById(`client-${data.client_id}`);
+                if (item) {
+                    const avatarEl = item.querySelector('.client-avatar');
+                    if (avatarEl) {
+                        avatarEl.innerHTML = clientListAvatarMarkup(data.client_id, data.avatar, data.username);
+                    }
                 }
             });
 
@@ -609,7 +617,7 @@
             });
         }
 
-        function addClientToList(clientId, username, address) {
+        function addClientToList(clientId, username, address, avatar, status) {
             const clientsList = document.getElementById('clients-list');
             const emptyState = clientsList.querySelector('.empty-state');
             if (emptyState) emptyState.remove();
@@ -618,12 +626,15 @@
             clientElement.className = 'client-item';
             clientElement.id = `client-${clientId}`;
             clientElement.onclick = () => selectClient(clientId);
+            const avatarMarkup = clientListAvatarMarkup(clientId, avatar, username);
+            const statusClass = getStatusClass(status || 'Disponible');
+            const statusLabel = status || 'Disponible';
             clientElement.innerHTML = `
-                <div class="client-avatar">${username.charAt(0).toUpperCase()}</div>
+                <div class="client-avatar">${avatarMarkup}</div>
                 <div class="client-info">
                     <div class="client-name">${username}</div>
                     <div class="client-address">${address}</div>
-                    <div class="client-status status-disponible">Disponible</div>
+                    <div class="client-status status-${statusClass}">${statusLabel}</div>
                 </div>
                 <span class="notification-badge" id="badge-${clientId}" style="display: none;">0</span>
             `;
@@ -647,6 +658,15 @@
                     </div>
                 `;
             }
+        }
+
+        function updateClientsList(clients) {
+            const list = document.getElementById('clients-list');
+            if (!list) return;
+            list.innerHTML = '';
+            clients.forEach(c => {
+                addClientToList(c.id, c.username, c.address, c.avatar, c.status);
+            });
         }
 
         function selectClient(clientId) {
@@ -729,6 +749,18 @@
 
         function getClientAvatar(clientId) {
             return (clientProfiles[clientId] && clientProfiles[clientId].avatar) || '🙂';
+        }
+
+        function clientListAvatarMarkup(clientId, avatarOverride, username) {
+            const avatar = avatarOverride || getClientAvatar(clientId);
+            const initial = username && username.charAt ? username.charAt(0).toUpperCase() : '?';
+            if (avatar && (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:image/'))) {
+                return `<img src="${avatar}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+            }
+            if (avatar && avatar.length <= 4 && /\p{Emoji}/u.test(avatar)) {
+                return `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:16px;">${avatar}</span>`;
+            }
+            return initial;
         }
 
         function serverAvatarMarkup(sender, type) {
