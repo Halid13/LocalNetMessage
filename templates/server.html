@@ -364,7 +364,7 @@
                         senderEl.textContent = data.username;
                     });
                     
-                    addMessageToDisplay('Système', `${data.username} a changé son nom.`, 'system');
+                    addSystemMessageToDisplay(`${data.username} a changé son nom`);
                 }
             });
 
@@ -425,7 +425,7 @@
                     });
                 }
                 if (selectedClient === data.client_id) {
-                    addMessageToDisplay('Système', `${data.username} est maintenant ${data.status}`, 'system');
+                    addSystemMessageToDisplay(`${data.username} est maintenant ${data.status}`);
                 }
             });
 
@@ -445,7 +445,7 @@
                 
                 // Si ce client est actuellement sélectionné, afficher le changement
                 if (selectedClient === data.client_id) {
-                    addMessageToDisplay('Système', `${data.username} a changé d'avatar`, 'system');
+                    addSystemMessageToDisplay(`${data.username} a changé d'avatar`);
                 }
             });
 
@@ -830,6 +830,7 @@
         }
 
         function addSystemMessage(message) {
+            addSystemMessageToDisplay(message);
         }
 
         function sendMessage() {
