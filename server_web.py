@@ -70,7 +70,9 @@ def handle_client(client_socket, client_address, client_id):
     socketio.emit('client_connected', {
         'client_id': client_id,
         'address': address_str,
-        'username': username
+        'username': username,
+        'status': clients[client_id].get('status', 'Disponible'),
+        'avatar': clients[client_id].get('avatar', '🙂')
     })
     
     try:
@@ -173,6 +175,7 @@ def handle_client(client_socket, client_address, client_id):
                             'filename': filename,
                             'mimetype': mimetype,
                             'size': len(data),
+                            'avatar': clients.get(client_id, {}).get('avatar', '🙂'),
                             'url': f"/files/server/received/{client_id}/{filename}"
                         })
                     except Exception as e:
@@ -205,7 +208,8 @@ def handle_client(client_socket, client_address, client_id):
                     'client_id': client_id,
                     'address': address_str,
                     'username': username,
-                    'message': line
+                    'message': line,
+                    'avatar': clients.get(client_id, {}).get('avatar', '🙂')
                 })
     
     except Exception as e:
@@ -246,6 +250,8 @@ def start_tcp_server():
                 'socket': client_socket,
                 'address': f"{client_address[0]}:{client_address[1]}",
                 'username': f"Client_{client_id}",
+                'status': 'Disponible',
+                'avatar': '🙂',
                 'messages': []
             }
             
@@ -360,7 +366,13 @@ def handle_connect():
     print('[WEB] Client web connecté')
     emit('clients_update', {
         'clients': [
-            {'id': cid, 'address': cdata['address'], 'username': cdata.get('username', 'Anonyme')}
+            {
+                'id': cid,
+                'address': cdata['address'],
+                'username': cdata.get('username', 'Anonyme'),
+                'status': cdata.get('status', 'Disponible'),
+                'avatar': cdata.get('avatar', '🙂')
+            }
             for cid, cdata in clients.items()
         ]
     })
