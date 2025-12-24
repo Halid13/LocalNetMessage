@@ -269,6 +269,11 @@ def index():
     """Page d'accueil - Interface du serveur"""
     return render_template('server.html')
 
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    """Servir les fichiers du dossier assets"""
+    return send_from_directory('assets', filename)
+
 @app.route('/client')
 def client():
     """Page client - Interface du client"""

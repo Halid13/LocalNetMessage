@@ -150,6 +150,11 @@ def index():
     """Page d'accueil - Interface du client"""
     return render_template('client.html')
 
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    """Servir les fichiers du dossier assets"""
+    return send_from_directory('assets', filename)
+
 @socketio.on('connect')
 def handle_connect():
     """Client web connecté"""
