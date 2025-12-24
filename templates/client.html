@@ -520,6 +520,13 @@
             } catch { return { avatar: '🙂' }; }
         }
 
+        function getServerProfile() {
+            try {
+                const raw = localStorage.getItem('serverProfile');
+                return raw ? JSON.parse(raw) : { avatar: '🙂' };
+            } catch { return { avatar: '🙂' }; }
+        }
+
         function avatarMarkup(sender, type) {
             const profile = getLocalProfile();
             const avatar = (type === 'sent' && profile && profile.avatar) ? profile.avatar : '';
@@ -532,6 +539,19 @@
                 return `<div class="message-avatar modern-avatar" style="display:flex;align-items:center;justify-content:center;font-size:18px;">${avatar}</div>`;
             }
             return `<div class="message-avatar modern-avatar" style="background: ${avatarColor};">${avatarInitial}</div>`;
+        }
+
+        function serverAvatarMarkup() {
+            const profile = getServerProfile();
+            const avatar = (profile && profile.avatar) ? profile.avatar : '🙂';
+            const initial = 'S';
+            if (avatar && (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:image/'))) {
+                return `<div class="message-avatar modern-avatar"><img src="${avatar}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/></div>`;
+            }
+            if (avatar && avatar.length <= 4 && /\p{Emoji}/u.test(avatar)) {
+                return `<div class="message-avatar modern-avatar" style="display:flex;align-items:center;justify-content:center;font-size:18px;">${avatar}</div>`;
+            }
+            return `<div class="message-avatar modern-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">${initial}</div>`;
         }
 
         function addMessage(sender, message, type, messageId = null) {
@@ -547,7 +567,7 @@
                 messageElement.dataset.messageId = messageId;
             }
             
-            const avatarHTML = avatarMarkup(sender, type);
+            const avatarHTML = type === 'received' ? serverAvatarMarkup() : avatarMarkup(sender, type);
             
             const readStatus = type === 'sent' ? '<span class="read-status modern-read-status" data-status="sent">✓</span>' : '';
             
@@ -584,7 +604,7 @@
 
             const messageElement = document.createElement('div');
             messageElement.className = `message modern-message ${type}`;
-            const avatarHTML = avatarMarkup(sender, type);
+            const avatarHTML = type === 'received' ? serverAvatarMarkup() : avatarMarkup(sender, type);
             messageElement.innerHTML = `
                 ${avatarHTML}
                 <div class="message-bubble modern-bubble ${type}">
