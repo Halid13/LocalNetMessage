@@ -13,6 +13,7 @@ Une application de messagerie locale simple et intuitive pour communiquer entre 
 - 🔒 **Chiffrement optionnel** - Chiffrement léger des messages côté navigateur avec partage de clé
 - 💾 **Historique des messages** - Base de données SQLite pour conserver les conversations
 - 🎨 **Design personnalisable** - Avatars et statuts pour serveur et clients
+- 👤 **Profil utilisateur** - Nom d'affichage, statut (Disponible/Occupé/En pause), avatar (emoji/URL ou image importée ≤ 256 Ko) avec aperçu, sélection du thème et activation du chiffrement par défaut; profil mémorisé (localStorage) et synchronisé avec le serveur (HTTP) et le client (Socket.IO).
 - 🚪 **Déconnexion intelligente** - Mots-clés de déconnexion reconnus automatiquement
 
 ---
