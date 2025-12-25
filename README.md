@@ -1,134 +1,202 @@
-# LocalNetMessage
+# 💬 LocalNetMessage
 
-Application de messagerie locale serveur ↔ client avec interfaces web modernes (UI/UX), temps réel via Socket.IO et un serveur TCP.
+Une application de messagerie locale simple et intuitive pour communiquer entre un serveur et plusieurs clients sur le réseau local. Avec une interface web moderne et des fonctionnalités avancées comme le chiffrement des messages.
 
-## 🚀 Fonctionnalités
+---
 
-- **Communication bidirectionnelle** entre serveur et clients
-- **Interface graphique moderne** avec design UI/UX avancé
-- **Support multi-clients** avec gestion de plusieurs connexions simultanées
-- **Messages en temps réel** via WebSocket et TCP
-- **Chiffrement symétrique léger** (XOR + Base64) côté navigateur avec partage de clé
-- **Déconnexion intelligente** avec mots-clés personnalisés
-- **Design responsive** pour tous les appareils
+## ✨ Fonctionnalités
 
-## 📋 Prérequis
+- 🔗 **Communication bidirectionnelle** - Serveur et clients peuvent s'échanger des messages en temps réel
+- 🌐 **Interface web moderne** - Interface graphique élégante et responsive pour serveur et clients
+- 👥 **Support multi-clients** - Le serveur gère plusieurs clients connectés simultanément
+- ⚡ **Messages en temps réel** - Échange instantané via WebSocket et TCP
+- 🔒 **Chiffrement optionnel** - Chiffrement léger des messages côté navigateur avec partage de clé
+- 💾 **Historique des messages** - Base de données SQLite pour conserver les conversations
+- 🎨 **Design personnalisable** - Avatars et statuts pour serveur et clients
+- 🚪 **Déconnexion intelligente** - Mots-clés de déconnexion reconnus automatiquement
 
-- Python 3.9 ou supérieur
-- pip (gestionnaire de paquets Python)
-- Navigateur moderne (Chrome, Edge, Firefox)
+---
 
-## 📦 Installation
+## 📋 Pré-requis
 
-1. Clonez le dépôt ou téléchargez les fichiers
-2. Installez les dépendances depuis `requirements.txt` :
+- **Python 3.9+**
+- **pip** (inclus avec Python)
+- **Navigateur web moderne** (Chrome, Edge, Firefox)
+
+---
+
+## 🚀 Installation
+
+1. Téléchargez ou clonez le projet
+2. Installez les dépendances :
 
 ```powershell
-python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## 🎯 Utilisation
+Les dépendances sont :
+- `flask` - Serveur web
+- `flask-socketio` - Communication WebSocket en temps réel
+- `python-socketio` - Gestion des connexions WebSocket
 
-### Mode Interface Web (recommandé)
+---
 
-#### Démarrer le serveur (Flask + Socket.IO):
+## 🎯 Comment utiliser
+
+### Option 1 : Interface Web (Recommandée)
+
+#### Étape 1 : Démarrer le serveur
+
+Ouvrez un terminal dans le dossier du projet et lancez :
 
 ```powershell
-python .\server_web.py
+python server_web.py
 ```
 
-- Interface web serveur: `http://localhost:5000`
-- Serveur TCP: `0.0.0.0:12345`
+L'interface du serveur sera accessible à `http://localhost:5000`
 
-#### Démarrer le client web:
+#### Étape 2 : Démarrer le client
+
+Ouvrez un **second terminal** et lancez :
 
 ```powershell
-python .\client_web.py
+python client_web.py
 ```
 
-- Interface web client: `http://localhost:5001`
-- Dans le formulaire du client, entrez l'IP du serveur (ex: `127.0.0.1`) puis cliquez sur Se connecter
+L'interface du client sera accessible à `http://localhost:5001`
 
-### Chiffrement des messages (UI Web)
-1. Ouvrir le panneau 🔒 dans l'interface.
-2. Émetteur : «🔄 Nouvelle Clé» puis «📋 Copier».
-3. Destinataire : coller la clé dans «Importer une Clé» puis «📥 Importer».
-4. Activer le toggle de chiffrement **des deux côtés**. Les messages `[ENCRYPTED]...` se déchiffrent automatiquement si la clé est identique. La clé est stockée en localStorage ; réimportez-la si le navigateur est réinitialisé.
+#### Étape 3 : Connecter le client au serveur
 
-### Mode Terminal (Scripts originaux)
+1. Allez dans l'interface client (`http://localhost:5001`)
+2. Entrez l'adresse IP du serveur : `127.0.0.1` (ou votre IP réseau)
+3. Cliquez sur **Connecter**
+4. Échangez vos messages !
 
-#### Lancer le serveur :
+---
+
+### Option 2 : Mode Terminal
+
+Si vous préférez une interface simple en ligne de commande :
+
+#### Serveur :
 ```powershell
-python .\server.py
+python server.py
 ```
 
-#### Lancer le client :
+#### Client :
 ```powershell
-python .\client.py
+python client.py
 ```
 
-## 🌐 Connexion sur le réseau local
+---
 
-Pour connecter des clients depuis d'autres ordinateurs :
+## 🔐 Chiffrer les messages
 
-1. **Trouvez l'adresse IP de votre serveur** :
-   - Windows : `ipconfig`
-   - Linux/Mac : `ifconfig` ou `ip addr`
+1. Ouvrez le **panneau de chiffrement** 🔒 (en haut de l'interface web)
+2. **Côté serveur** : Cliquez sur **Nouvelle Clé** puis **Copier**
+3. **Côté client** : Collez la clé dans **Importer une Clé** et cliquez sur **Importer**
+4. **Activez le chiffrement** des deux côtés via le toggle
+5. Les messages s'afficheront chiffrés et se déchifferont automatiquement
 
-2. **Sur le client**, entrez l'adresse IP locale du serveur (ex: `192.168.1.10`)
+💡 **Note** : Les clés sont stockées localement. Si vous videz le cache, vous devrez réimporter la clé.
 
-3. **Assurez-vous que le pare-feu** autorise les connexions sur les ports :
-   - Port 12345 (serveur TCP)
-   - Port 5000 (interface web serveur)
-   - Port 5001 (interface web client)
+---
 
-## 💬 Mots-clés de déconnexion
+## 🌍 Connecter des clients sur le réseau local
 
-Les mots suivants terminent la conversation :
-- `quit`, `exit`
-- `au revoir`, `aurevoir`
-- `à plus`, `a plus`
-- `bye`, `goodbye`
-- `ciao`, `salut`, `tchao`, `bye bye`
-- `à bientôt`, `a bientot`
-- `adieu`, `fin`
+### Trouver votre adresse IP serveur
+
+**Windows** :
+```powershell
+ipconfig
+```
+Cherchez `Adresse IPv4` (généralement `192.168.x.x` ou `10.x.x.x`)
+
+**Linux/Mac** :
+```bash
+ifconfig
+# ou
+ip addr
+```
+
+### Configurer la connexion
+
+1. Sur le client, entrez l'IP trouvée (exemple : `192.168.1.100`)
+2. Vérifiez que le **pare-feu autorise** les connexions sur :
+   - Port **12345** (communication TCP)
+   - Port **5000** (interface serveur)
+   - Port **5001** (interface client)
+
+---
+
+## 🚪 Mots-clés de déconnexion
+
+Tapez l'un de ces mots pour terminer la conversation :
+
+| Français | English |
+|----------|---------|
+| quit, exit | bye, goodbye |
+| au revoir, aurevoir | ciao |
+| à plus, a plus | tchao |
+| salut | bye bye |
+| à bientôt, a bientot | |
+| adieu, fin | |
+
+---
 
 ## 📁 Structure du projet
 
 ```
 LocalNetMessage/
-├── server.py              # Serveur TCP en mode terminal
-├── client.py              # Client TCP en mode terminal
-├── server_web.py          # Serveur avec interface web
-├── client_web.py          # Client avec interface web
-├── templates/
-│   ├── server.html        # Interface graphique du serveur
-│   └── client.html        # Interface graphique du client
-└── static/
-    └── style.css          # Styles CSS modernes
+├── 📄 server.py           # Serveur TCP (mode terminal)
+├── 📄 client.py           # Client TCP (mode terminal)
+├── 📄 server_web.py       # Serveur web (Flask + WebSocket)
+├── 📄 client_web.py       # Client web (Flask + WebSocket)
+├── 📄 database.py         # Gestion de la base de données SQLite
+├── 📄 requirements.txt     # Dépendances Python
+│
+├── 📁 templates/
+│   ├── 🌐 server.html     # Interface web du serveur
+│   └── 🌐 client.html     # Interface web du client
+│
+├── 📁 static/
+│   ├── 🎨 style.css
+│   ├── 🎨 theme-selector.css
+│   ├── 🎨 encryption-ui.css
+│   └── ⚙️ encryption.js, profile.js, ...
+│
+├── 📁 uploads/            # Fichiers partagés
+│   ├── server/
+│   └── client/
+│
+└── 📁 Doc/
+    ├── 📖 guide-projet.md
+    ├── 📖 DATABASE.md
+    └── 📖 encryption_guide.md
 ```
 
-## 🧪 Tester rapidement (scénario recommandé)
+---
 
-1. Lancez le serveur web:
+## 🧪 Test rapide (Pas à pas)
 
-```powershell
-python .\server_web.py
-```
+1. **Lancez le serveur** :
+   ```powershell
+   python server_web.py
+   ```
 
-2. Ouvrez `http://localhost:5000` et vérifiez la liste des clients (vide au début).
+2. **Allez à** `http://localhost:5000` - Vous voyez l'interface serveur (vide pour le moment)
 
-3. Lancez le client web dans un autre terminal:
+3. **Lancez le client** (dans un autre terminal) :
+   ```powershell
+   python client_web.py
+   ```
 
-```powershell
-python .\client_web.py
-```
+4. **Allez à** `http://localhost:5001` et entrez `127.0.0.1` puis **Connecter**
 
-4. Ouvrez `http://localhost:5001`, entrez `127.0.0.1` comme IP serveur, puis connectez.
+5. **Envoyez des messages** et regardez-les apparaître des deux côtés en temps réel !
 
-5. Envoyez des messages depuis le client et vérifiez qu'ils apparaissent côté serveur en temps réel.
+---
 
 ## 📝 Auteur
 
-Projet réalisé par **Halid13**
+Développé par **Halid13** ❤️
