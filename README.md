@@ -177,26 +177,6 @@ LocalNetMessage/
 
 ---
 
-## 🧪 Test rapide (Pas à pas)
-
-1. **Lancez le serveur** :
-   ```powershell
-   python server_web.py
-   ```
-
-2. **Allez à** `http://localhost:5000` - Vous voyez l'interface serveur (vide pour le moment)
-
-3. **Lancez le client** (dans un autre terminal) :
-   ```powershell
-   python client_web.py
-   ```
-
-4. **Allez à** `http://localhost:5001` et entrez `127.0.0.1` puis **Connecter**
-
-5. **Envoyez des messages** et regardez-les apparaître des deux côtés en temps réel !
-
----
-
 ## 📝 Auteur
 
-Développé par **Halid13** ❤️
+Développé par **Halid13**
