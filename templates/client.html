@@ -345,7 +345,6 @@
 
         socket.on('server_avatar_updated', (data) => {
             if (data.avatar) {
-                // Mettre à jour le localStorage du serveur
                 const serverProfile = JSON.parse(localStorage.getItem('serverProfile') || '{"avatar":"🙂"}');
                 serverProfile.avatar = data.avatar;
                 localStorage.setItem('serverProfile', JSON.stringify(serverProfile));
@@ -357,7 +356,6 @@
 
         socket.on('avatar_changed', (data) => {
             if (data.avatar) {
-                // Mettre à jour le localStorage du client
                 const clientProfile = JSON.parse(localStorage.getItem('clientProfile') || '{"avatar":"🙂"}');
                 clientProfile.avatar = data.avatar;
                 localStorage.setItem('clientProfile', JSON.stringify(clientProfile));
@@ -805,7 +803,6 @@
             return statusMap[status] || 'disponible';
         }
 
-        // Mettre à jour le bouton profil avec l'avatar
         function updateProfileButton(avatar) {
             const btn = document.getElementById('profile-btn');
             if (!btn) return;

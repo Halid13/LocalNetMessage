@@ -10,9 +10,6 @@ class MessageEncryption {
         this.loadEncryptionKey();
     }
 
-    /**
-     * Charger ou générer une clé de chiffrement
-     */
     loadEncryptionKey() {
         let key = localStorage.getItem('encryptionKey');
         if (!key) {
@@ -22,25 +19,16 @@ class MessageEncryption {
         this.encryptionKey = key;
     }
 
-    /**
-     * Générer une clé aléatoire sécurisée (32 caractères hexadécimals = 16 bytes)
-     */
     generateRandomKey() {
         const array = new Uint8Array(16);
         crypto.getRandomValues(array);
         return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
     }
 
-    /**
-     * Obtenir la clé de chiffrement actuelle
-     */
     getKey() {
         return this.encryptionKey;
     }
 
-    /**
-     * Définir une clé personnalisée
-     */
     setKey(key) {
         if (key && key.length >= 32) {
             this.encryptionKey = key;
@@ -50,25 +38,15 @@ class MessageEncryption {
         return false;
     }
 
-    /**
-     * Activer/désactiver le chiffrement
-     */
     setEncryptionEnabled(enabled) {
         this.isEncryptionEnabled = enabled;
         localStorage.setItem('encryptionEnabled', enabled ? 'true' : 'false');
     }
 
-    /**
-     * Vérifier si le chiffrement est activé
-     */
     isEnabled() {
         return this.isEncryptionEnabled;
     }
 
-    /**
-     * Chiffrer un message en utilisant une simple substitution XOR avec hash
-     * (Alternative sécurisée sans dépendance externe)
-     */
     encrypt(message) {
         if (!this.isEncryptionEnabled || !this.encryptionKey) {
             return message;
@@ -95,9 +73,6 @@ class MessageEncryption {
         }
     }
 
-    /**
-     * Déchiffrer un message
-     */
     decrypt(encryptedMessage) {
         if (!encryptedMessage.startsWith('[ENCRYPTED]')) {
             return encryptedMessage;
@@ -124,9 +99,6 @@ class MessageEncryption {
         }
     }
 
-    /**
-     * Réinitialiser la clé de chiffrement
-     */
     resetKey() {
         const newKey = this.generateRandomKey();
         this.encryptionKey = newKey;
@@ -134,9 +106,6 @@ class MessageEncryption {
         return newKey;
     }
 
-    /**
-     * Copier la clé dans le presse-papiers
-     */
     copyKeyToClipboard() {
         try {
             navigator.clipboard.writeText(this.encryptionKey);
@@ -147,9 +116,6 @@ class MessageEncryption {
         }
     }
 
-    /**
-     * Formater la clé pour l'affichage
-     */
     formatKeyForDisplay() {
         if (!this.encryptionKey) return '';
         const start = this.encryptionKey.substring(0, 8);
@@ -157,9 +123,6 @@ class MessageEncryption {
         return `${start}...${end}`;
     }
 
-    /**
-     * Vérifier que deux clés correspondent
-     */
     verifyKey(key) {
         if (!key) return false;
         const normalized = key.trim();

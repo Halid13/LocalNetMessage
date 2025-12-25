@@ -45,18 +45,15 @@
       }
     }
     
-    // Toujours sauvegarder le profil dans localStorage après application
     saveProfile(p);
     const headerAvatar = document.querySelector('.server-avatar, .logo-wrapper');
     if (headerAvatar) {
       headerAvatar.setAttribute('data-avatar', p.avatar);
     }
 
-    // Expose to window and notify listeners
     try { window.currentProfile = p; } catch {}
     try { window.dispatchEvent(new CustomEvent('profile-updated', { detail: p })); } catch {}
     
-    // Update profile button with avatar
     updateProfileButtonDisplay(p.avatar);
   }
 
@@ -163,7 +160,6 @@
       }
     }
 
-    // Saisie directe (emoji ou URL)
     content.querySelector('#profile-avatar').addEventListener('input', (e)=>{
       const v = e.target.value.trim();
       const prev = content.querySelector('#profile-avatar-preview');
@@ -171,7 +167,6 @@
       else { prev.textContent = v || '🙂'; }
     });
 
-    // Import de fichier -> converti en data URL et injecté dans le champ texte
     const uploadBtn = content.querySelector('#profile-avatar-upload');
     const uploadInput = content.querySelector('#profile-avatar-file');
     uploadBtn.addEventListener('click', ()=> uploadInput.click());

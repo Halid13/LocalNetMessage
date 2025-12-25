@@ -407,7 +407,6 @@
 
             socket.on('server_avatar_updated', (data) => {
                 if (data.avatar) {
-                    // Mettre à jour le localStorage du serveur
                     const serverProfile = JSON.parse(localStorage.getItem('serverProfile') || '{"avatar":"🙂"}');
                     serverProfile.avatar = data.avatar;
                     localStorage.setItem('serverProfile', JSON.stringify(serverProfile));
@@ -1022,13 +1021,10 @@
             const serverProfile = JSON.parse(localStorage.getItem('serverProfile') || '{"avatar":"🙂"}');
             const avatar = serverProfile.avatar || '🙂';
             
-            // Check if it's a data URL or image URL
             if (avatar.startsWith('data:image/') || avatar.startsWith('http://') || avatar.startsWith('https://')) {
-                // Create and display image
                 profileBtn.innerHTML = `<img src="${avatar}" alt="Avatar" style="width: 20px; height: 20px; object-fit: cover; border-radius: 50%; display: block;">`;
                 profileBtn.style.padding = '2px';
             } else {
-                // Display emoji
                 profileBtn.textContent = avatar;
                 profileBtn.style.padding = '5px 8px';
             }
