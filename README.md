@@ -1,6 +1,6 @@
 # 💬 LocalNetMessage
 
-Une application de messagerie locale simple et intuitive pour communiquer entre un serveur et plusieurs clients sur le réseau local. Avec une interface web moderne et des fonctionnalités avancées comme le chiffrement des messages.
+Une application de messagerie dans un reseau local et intuitive pour communiquer entre des utilisateurs (un serveur et plusieurs clients) sur le réseau. Avec une interface web moderne et des fonctionnalités avancées comme le chiffrement des messages.
 
 ---
 
@@ -12,8 +12,9 @@ Une application de messagerie locale simple et intuitive pour communiquer entre 
 - ⚡ **Messages en temps réel** - Échange instantané via WebSocket et TCP
 - 🔒 **Chiffrement optionnel** - Chiffrement léger des messages côté navigateur avec partage de clé
 - 💾 **Historique des messages** - Base de données SQLite pour conserver les conversations
+- 📎 **Partage de fichiers** - Envoi et réception de fichiers (images, documents, etc.) jusqu'à 2 Mo, avec sauvegarde automatique et historique
 - 🎨 **Design personnalisable** - Avatars et statuts pour serveur et clients
-- 👤 **Profil utilisateur** - Nom d'affichage, statut (Disponible/Occupé/En pause), avatar (emoji/URL ou image importée ≤ 256 Ko) avec aperçu, sélection du thème et activation du chiffrement par défaut; profil mémorisé (localStorage) et synchronisé avec le serveur (HTTP) et le client (Socket.IO).
+- 👤 **Profil utilisateur** - Nom d'affichage, statut (Disponible/Occupé/En pause), avatar avec aperçu, sélection du thème et activation du chiffrement par défaut
 - 🚪 **Déconnexion intelligente** - Mots-clés de déconnexion reconnus automatiquement
 
 ---
